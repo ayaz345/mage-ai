@@ -67,17 +67,12 @@ async def execute_operation(
 
     end_time = datetime.utcnow()
 
-    error = response.get('error', None)
-    if error:
+    if error := response.get('error', None):
         return __render_error(handler, error, **tags)
 
-    info('Action: {} {} {} {} {}'.format(
-        action,
-        child or resource,
-        child_pk or pk,
-        resource if child else '',
-        pk if child else '',
-    ))
+    info(
+        f"Action: {action} {child or resource} {child_pk or pk} {resource if child else ''} {pk if child else ''}"
+    )
     api_time = end_time.timestamp() - start_time.timestamp()
     info(f'Latency: {api_time:.4f} seconds')
     tags = dict(
@@ -103,23 +98,18 @@ def __determine_action(
     child_pk: Union[None, int, str] = None,
     pk: Union[None, int, str] = None,
 ) -> Tuple[str, str]:
-    if 'DELETE' == request.method:
+    if request.method == 'DELETE':
         return (DELETE, __parse_request_body(request))
 
-    if 'GET' == request.method:
-        if pk and child and child_pk:
+    if request.method == 'GET':
+        if pk and child and child_pk or (not pk or not child) and pk:
             return (DETAIL, request.query_arguments)
-        elif pk and child and not child_pk:
+        else:
             return (LIST, request.query_arguments)
-        elif pk and not child:
-            return (DETAIL, request.query_arguments)
-        elif not pk:
-            return (LIST, request.query_arguments)
-
-    if 'POST' == request.method:
+    if request.method == 'POST':
         return (CREATE, __parse_request_body(request))
 
-    if 'PUT' == request.method:
+    if request.method == 'PUT':
         return (UPDATE, __parse_request_body(request))
 
 
@@ -149,9 +139,8 @@ def __meta(request) -> Dict:
 
 def __meta_keys(request) -> List[str]:
     return list(
-        filter(
-            lambda x: x[0] == '_', [
-                k for k in request.query_arguments.keys()]))
+        filter(lambda x: x[0] == '_', list(request.query_arguments.keys()))
+    )
 
 
 def __payload(request) -> Dict:
@@ -219,19 +208,15 @@ def __log_error(
 
     endpoint = resource
     if pk:
-        endpoint += '/{}'.format(pk)
+        endpoint += f'/{pk}'
         if child:
-            endpoint += '/{}'.format(child)
+            endpoint += f'/{child}'
             if child_pk:
-                endpoint += '/{}'.format(child_pk)
+                endpoint += f'/{child_pk}'
 
-    error('[{}] [ERROR] {} /{} [user: {}]: {}'.format(
-        datetime.utcnow(),
-        request.method,
-        endpoint,
-        user_id,
-        err,
-    ))
+    error(
+        f'[{datetime.utcnow()}] [ERROR] {request.method} /{endpoint} [user: {user_id}]: {err}'
+    )
 
     increment('api.error', tags=dict(
         endpoint=endpoint,

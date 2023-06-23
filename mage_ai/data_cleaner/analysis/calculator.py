@@ -63,7 +63,7 @@ class AnalysisCalculator:
         arr_args_1 = ([df_clean for _ in features_to_use],)
         arr_args_2 = (features_to_use,)
 
-        data_for_columns = [d for d in map(self.calculate_column, *arr_args_1, *arr_args_2)]
+        data_for_columns = list(map(self.calculate_column, *arr_args_1, *arr_args_2))
 
         correlation_data = self.calculate_correlation_data(df)
         time_series_charts = self.calculate_timeseries_data(df)
@@ -82,8 +82,7 @@ class AnalysisCalculator:
 
         correlation_overview = []
         for d in data_for_columns:
-            corr = d.get(DATA_KEY_CORRELATION)
-            if corr:
+            if corr := d.get(DATA_KEY_CORRELATION):
                 correlation_overview.append(
                     {
                         'feature': d['feature'],
@@ -102,11 +101,7 @@ class AnalysisCalculator:
 
     @property
     def features_by_uuid(self):
-        data = {}
-        for feature in self.features:
-            data[feature['uuid']] = feature
-
-        return data
+        return {feature['uuid']: feature for feature in self.features}
 
     @property
     def datetime_features(self):
@@ -122,7 +117,7 @@ class AnalysisCalculator:
 
     @property
     def tags(self):
-        return dict()
+        return {}
 
     def calculate_column(self, df, feature):
         with timer('analysis.calculate_column', dict(feature=feature), verbose=VERBOSE):
@@ -144,16 +139,16 @@ class AnalysisCalculator:
         chart_data = []
         correlation = []
 
-        is_numeric_col = is_numeric_dtype(df, col, column_type)
-        if is_numeric_col:
+        if is_numeric_col := is_numeric_dtype(df, col, column_type):
             with timer(
-                'analysis.calculate_column.build_histogram_data',
-                dict(feature=feature),
-                verbose=VERBOSE,
-            ):
+                        'analysis.calculate_column.build_histogram_data',
+                        dict(feature=feature),
+                        verbose=VERBOSE,
+                    ):
                 series_cleaned = df[col].dropna()
-                histogram_data = charts.build_histogram_data(col, series_cleaned, column_type)
-                if histogram_data:
+                if histogram_data := charts.build_histogram_data(
+                    col, series_cleaned, column_type
+                ):
                     chart_data.append(histogram_data)
 
         return {
@@ -171,7 +166,7 @@ class AnalysisCalculator:
         ]
         datetime_features_to_use = self.datetime_features
 
-        charts_by_column = dict()
+        charts_by_column = {}
         for f in datetime_features_to_use:
             time_series_charts = charts.build_time_series_data(df, timeseries_features, f['uuid'])
             if time_series_charts is None:

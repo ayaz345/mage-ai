@@ -80,16 +80,17 @@ def should_cache_data_from_upstream(
     block_loader = ConfigFileLoader(config_path, block_data_provider)
     upstream_block_loader = ConfigFileLoader(config_path, upstream_block_data_provider)
 
-    return not all([
-        block_config.get(k) and
-        upstream_block_config.get(k) and
-        block_config.get(k) == upstream_block_config.get(k) for k in config_keys
-    ]) or not all([
-        block_loader.config.get(k) and
-        upstream_block_loader.config.get(k) and
-        block_loader.config.get(k) == upstream_block_loader.config.get(k)
+    return not all(
+        block_config.get(k)
+        and upstream_block_config.get(k)
+        and block_config.get(k) == upstream_block_config.get(k)
+        for k in config_keys
+    ) or not all(
+        block_loader.config.get(k)
+        and upstream_block_loader.config.get(k)
+        and block_loader.config.get(k) == upstream_block_loader.config.get(k)
         for k in config_profile_keys
-    ])
+    )
 
 
 def interpolate_input(
@@ -112,10 +113,7 @@ def interpolate_input(
         matcher1 = '{} df_{} {}'.format('{{', idx + 1, '}}')
 
         is_sql = BlockLanguage.SQL == upstream_block.language
-        if is_sql:
-            configuration = upstream_block.configuration
-        else:
-            configuration = block.configuration
+        configuration = upstream_block.configuration if is_sql else block.configuration
         use_raw_sql = configuration.get('use_raw_sql')
 
         data_provider1 = block.configuration.get('data_provider')
@@ -186,7 +184,7 @@ def interpolate_input(
 
 def interpolate_vars(query, global_vars=None):
     if global_vars is None:
-        global_vars = dict()
+        global_vars = {}
     return Template(query).render(**global_vars)
 
 
@@ -223,15 +221,17 @@ def table_name_parts(
     schema = None
     table = None
 
-    full_table_name = configuration.get(
-        CONFIG_KEY_UPSTREAM_BLOCK_CONFIGURATION,
-        {},
-    ).get(
-        upstream_block.uuid,
-        {},
-    ).get(CONFIG_KEY_UPSTREAM_BLOCK_CONFIGURATION_TABLE_NAME)
-
-    if full_table_name:
+    if (
+        full_table_name := configuration.get(
+            CONFIG_KEY_UPSTREAM_BLOCK_CONFIGURATION,
+            {},
+        )
+        .get(
+            upstream_block.uuid,
+            {},
+        )
+        .get(CONFIG_KEY_UPSTREAM_BLOCK_CONFIGURATION_TABLE_NAME)
+    ):
         parts = full_table_name.split('.')
         if len(parts) == 3:
             database, schema, table = parts
@@ -268,9 +268,8 @@ def table_name_parts_from_query(
     match = re.search(r'[^.+]from[\s](\S+)\.(\S+)\.(\S+[^;\s]+)', query, re.IGNORECASE)
     if match is None:
         return None
-    else:
-        database, schema, table = match.groups()
-        return database, schema, table
+    database, schema, table = match.groups()
+    return database, schema, table
 
 
 def build_dynamic_table_name(table_name: str, dynamic_block_index: int = None) -> str:
@@ -404,7 +403,7 @@ def extract_and_replace_text_between_strings(
 
     extracted_text = text[start_idx:end_idx]
 
-    new_text = text[0:max(start_idx - 1, 0)] + replace_string + text[end_idx + 1:]
+    new_text = text[:max(start_idx - 1, 0)] + replace_string + text[end_idx + 1:]
 
     return extracted_text, new_text
 
@@ -425,30 +424,28 @@ def extract_create_statement_table_name(text: str) -> str:
     if not statement_partial:
         return None
 
-    match1 = re.match(create_table_pattern, statement_partial, re.IGNORECASE)
-    if match1:
+    if match1 := re.match(
+        create_table_pattern, statement_partial, re.IGNORECASE
+    ):
         idx_start, idx_end = match1.span()
-        new_statement = statement_partial[0:idx_start] + statement_partial[idx_end:]
-        match2 = re.search(r'[^\s]+', new_statement.strip())
-        if match2:
-            return match2.group(0)
+        new_statement = statement_partial[:idx_start] + statement_partial[idx_end:]
+        if match2 := re.search(r'[^\s]+', new_statement.strip()):
+            return match2[0]
 
-    parts = statement_partial[:len(statement_partial) - 1].strip().split(' ')
+    parts = statement_partial[:-1].strip().split(' ')
     return parts[-1]
 
 
 def extract_insert_statement_table_names(text: str) -> List[str]:
-    matches = re.findall(
+    return re.findall(
         r'insert(?: overwrite)*(?: into)*[\s]+([\w.]+)',
         remove_comments(text),
         re.IGNORECASE,
     )
-    return matches
 
 
 def has_create_or_insert_statement(text: str) -> bool:
-    table_name = extract_create_statement_table_name(text)
-    if table_name:
+    if table_name := extract_create_statement_table_name(text):
         return True
 
     matches = extract_insert_statement_table_names(text)

@@ -11,8 +11,7 @@ from mage_ai.orchestration.db.models.schedules import BlockRun
 class LogPolicy(BasePolicy):
     @property
     def entity(self):
-        parent_model = self.options.get('parent_model')
-        if parent_model:
+        if parent_model := self.options.get('parent_model'):
             if type(parent_model) is BlockRun:
                 return Permission.Entity.PIPELINE, parent_model.pipeline_run.pipeline_uuid
             elif issubclass(parent_model.__class__, Pipeline):

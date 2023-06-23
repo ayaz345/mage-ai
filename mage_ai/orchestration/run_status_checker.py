@@ -53,11 +53,10 @@ def check_status(
             raise Exception('Upstream block run failed, stopping sensor...')
         else:
             return block_run.status == BlockRun.BlockRunStatus.COMPLETED
+    elif pipeline_run.status in PIPELINE_FAILURE_STATUSES:
+        raise Exception('Upstream pipeline run failed, stopping sensor...')
     else:
-        if pipeline_run.status in PIPELINE_FAILURE_STATUSES:
-            raise Exception('Upstream pipeline run failed, stopping sensor...')
-        else:
-            return pipeline_run.status == PipelineRun.PipelineRunStatus.COMPLETED
+        return pipeline_run.status == PipelineRun.PipelineRunStatus.COMPLETED
 
 
 def __validate_pipeline_and_block(pipeline_uuid, block_uuid):

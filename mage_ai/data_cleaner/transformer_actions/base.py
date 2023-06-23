@@ -221,13 +221,10 @@ class BaseAction:
         for column_type, original_columns in self.columns_by_type.items():
             cols = [col for col in original_columns if col in current_columns]
 
-            if len(cols) == 0:
+            if not cols:
                 continue
 
-            build_pipeline = COLUMN_TYPE_PIPELINE_MAPPING.get(column_type)
-            if not build_pipeline:
-                continue
-
-            df_copy[cols] = build_pipeline().fit_transform(df_copy[cols])
+            if build_pipeline := COLUMN_TYPE_PIPELINE_MAPPING.get(column_type):
+                df_copy[cols] = build_pipeline().fit_transform(df_copy[cols])
 
         return df_copy

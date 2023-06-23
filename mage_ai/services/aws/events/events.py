@@ -13,7 +13,7 @@ def get_all_event_rules():
     response = client.list_rules(
         Limit=EVENT_RULE_LIMIT
     )
-    formatted_rules = [
+    return [
         dict(
             name=r['Name'],
             state=r['State'],
@@ -23,7 +23,6 @@ def get_all_event_rules():
         )
         for r in response['Rules']
     ]
-    return formatted_rules
 
 
 def update_event_rule_targets(name):

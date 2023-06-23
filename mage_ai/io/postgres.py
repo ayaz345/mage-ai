@@ -232,7 +232,7 @@ class Postgres(BaseSQL):
             return 'bytea'
         elif dtype in (PandasTypes.FLOATING, PandasTypes.DECIMAL, PandasTypes.MIXED_INTEGER_FLOAT):
             return 'double precision'
-        elif dtype == PandasTypes.INTEGER or dtype == PandasTypes.INT64:
+        elif dtype in [PandasTypes.INTEGER, PandasTypes.INT64]:
             max_int, min_int = column.max(), column.min()
             if np.int16(max_int) == max_int and np.int16(min_int) == min_int:
                 return 'smallint'
@@ -265,18 +265,11 @@ class Postgres(BaseSQL):
         unique_conflict_method: str = None,
         unique_constraints: List[str] = None,
     ) -> None:
-        if unique_constraints and unique_conflict_method:
-            use_insert_command = True
-        else:
-            # Use COPY command
-            use_insert_command = False
-
+        use_insert_command = bool(unique_constraints and unique_conflict_method)
         def clean_array_value(val):
             if val is None or type(val) is not str or len(val) < 2:
                 return val
-            if val[0] == '[' and val[-1] == ']':
-                return '{' + val[1:-1] + '}'
-            return val
+            return '{' + val[1:-1] + '}' if val[0] == '[' and val[-1] == ']' else val
 
         def serialize_obj(val):
             if type(val) is dict:
@@ -307,7 +300,7 @@ class Postgres(BaseSQL):
             if df_col_dropna.count() == 0:
                 continue
             if dtypes[col] == PandasTypes.OBJECT \
-                    or (df_[col].dtype == PandasTypes.OBJECT and
+                        or (df_[col].dtype == PandasTypes.OBJECT and
                         type(df_col_dropna.iloc[0]) != str):
                 df_[col] = df_[col].apply(lambda x: serialize_obj(x))
         df_.replace({np.NaN: None}, inplace=True)
@@ -326,10 +319,10 @@ class Postgres(BaseSQL):
             ]
 
             unique_constraints = \
-                [f'"{self._clean_column_name(col, allow_reserved_words=allow_reserved_words)}"'
+                    [f'"{self._clean_column_name(col, allow_reserved_words=allow_reserved_words)}"'
                  for col in unique_constraints]
             columns_cleaned = \
-                [f'"{self._clean_column_name(col, allow_reserved_words=allow_reserved_words)}"'
+                    [f'"{self._clean_column_name(col, allow_reserved_words=allow_reserved_words)}"'
                  for col in columns]
 
             commands.append(f"ON CONFLICT ({', '.join(unique_constraints)})")

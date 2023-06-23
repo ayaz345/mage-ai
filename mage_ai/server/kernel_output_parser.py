@@ -53,7 +53,7 @@ def parse_output_message(message: dict) -> dict:
         data_content = image
         data_type = DataType.IMAGE_PNG
     elif traceback:
-        data_content = [line for line in traceback]
+        data_content = list(traceback)
         data_type = DataType.TEXT
         error = traceback
     elif text_html:
@@ -69,7 +69,7 @@ def parse_output_message(message: dict) -> dict:
         data_type = DataType.TEXT
     elif msg_type in COMMS_MESSAGE_TYPES:
         if data.get('method') == 'update':
-            progress_data = f"{data.get('state', dict()).get('value', 0) * 100}"
+            progress_data = f"{data.get('state', {}).get('value', 0) * 100}"
             data_content = progress_data
             data_type = DataType.PROGRESS
 

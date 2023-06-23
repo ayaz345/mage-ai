@@ -8,7 +8,9 @@ from mage_ai.shared.hash import merge_dict
 class AzureContainerInstanceExecutor(BlockExecutor):
     def __init__(self, pipeline, block_uuid: str, execution_partition: str = None):
         super().__init__(pipeline, block_uuid, execution_partition=execution_partition)
-        self.executor_config = self.pipeline.repo_config.azure_container_instance_config or dict()
+        self.executor_config = (
+            self.pipeline.repo_config.azure_container_instance_config or {}
+        )
         if self.block.executor_config is not None:
             self.executor_config = merge_dict(self.executor_config, self.block.executor_config)
 

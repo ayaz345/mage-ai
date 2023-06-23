@@ -41,31 +41,22 @@ class File:
         return os.path.join(self.repo_path, self.dir_path, self.filename)
 
     @classmethod
-    def file_exists(self, file_path: str) -> bool:
+    def file_exists(cls, file_path: str) -> bool:
         return os.path.isfile(file_path)
 
     @classmethod
-    def create_parent_directories(self, file_path: str) -> bool:
-        will_create = not self.file_exists(file_path)
+    def create_parent_directories(cls, file_path: str) -> bool:
+        will_create = not cls.file_exists(file_path)
         if will_create:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
         return will_create
 
     @classmethod
-    def create(
-        self,
-        filename,
-        dir_path,
-        content: str = None,
-        repo_path: str = None,
-        create_directories_if_not_exist: bool = True,
-        file_version_only: bool = False,
-        overwrite: bool = True,
-    ):
+    def create(cls, filename, dir_path, content: str = None, repo_path: str = None, create_directories_if_not_exist: bool = True, file_version_only: bool = False, overwrite: bool = True):
         repo_path = repo_path or get_repo_path()
         file = File(filename, dir_path, repo_path)
 
-        self.write(
+        cls.write(
             repo_path,
             dir_path,
             filename,
@@ -78,20 +69,11 @@ class File:
         return file
 
     @classmethod
-    async def create_async(
-        self,
-        filename,
-        dir_path,
-        content: str = None,
-        repo_path: str = None,
-        create_directories_if_not_exist: bool = True,
-        file_version_only: bool = False,
-        overwrite: bool = True,
-    ):
+    async def create_async(cls, filename, dir_path, content: str = None, repo_path: str = None, create_directories_if_not_exist: bool = True, file_version_only: bool = False, overwrite: bool = True):
         repo_path = repo_path or get_repo_path()
         file = File(filename, dir_path, repo_path)
 
-        await self.write_async(
+        await cls.write_async(
             repo_path,
             dir_path,
             filename,
@@ -104,23 +86,18 @@ class File:
         return file
 
     @classmethod
-    def from_path(self, file_path, repo_path: str = None):
+    def from_path(cls, file_path, repo_path: str = None):
         repo_path_alt = repo_path
         if repo_path_alt is None:
             repo_path_alt = get_repo_path()
         return File(os.path.basename(file_path), os.path.dirname(file_path), repo_path_alt)
 
     @classmethod
-    def get_all_files(self, repo_path):
+    def get_all_files(cls, repo_path):
         return traverse(os.path.basename(repo_path), True, repo_path)
 
     @classmethod
-    def file_path_versions_dir(
-        self,
-        repo_path: str,
-        dir_path: str,
-        filename: str,
-    ) -> Tuple[str, str]:
+    def file_path_versions_dir(cls, repo_path: str, dir_path: str, filename: str) -> Tuple[str, str]:
         return os.path.join(
             repo_path,
             FILE_VERSIONS_DIR,
@@ -129,7 +106,7 @@ class File:
         )
 
     @classmethod
-    def validate_content(self, dir_path, filename, content):
+    def validate_content(cls, dir_path, filename, content):
         if dir_path.startswith(PIPELINES_FOLDER_PREFIX) and filename == 'triggers.yaml':
             from mage_ai.data_preparation.models.triggers import load_trigger_configs
 
@@ -137,18 +114,11 @@ class File:
             load_trigger_configs(content, pipeline_uuid=pipeline_uuid, raise_exception=True)
 
     @classmethod
-    def write_preprocess(
-        self,
-        repo_path: str,
-        dir_path: str,
-        filename: str,
-        content: str,
-        create_directories_if_not_exist: bool = True,
-        file_version_only: bool = False,
-        overwrite: bool = True,
-    ):
+    def write_preprocess(cls, repo_path: str, dir_path: str, filename: str, content: str, create_directories_if_not_exist: bool = True, file_version_only: bool = False, overwrite: bool = True):
         file_path_main = os.path.join(repo_path, dir_path, filename)
-        file_path_versions_dir = self.file_path_versions_dir(repo_path, dir_path, filename)
+        file_path_versions_dir = cls.file_path_versions_dir(
+            repo_path, dir_path, filename
+        )
         file_path_versions = os.path.join(
             file_path_versions_dir,
             str(round(datetime.utcnow().timestamp())),
@@ -173,42 +143,25 @@ class File:
 
             if number_of_file_versions >= MAX_NUMBER_OF_FILE_VERSIONS:
                 number_of_file_versions_to_delete = 1 + \
-                    (number_of_file_versions - MAX_NUMBER_OF_FILE_VERSIONS)
+                        (number_of_file_versions - MAX_NUMBER_OF_FILE_VERSIONS)
                 for fn in sorted(file_versions)[:number_of_file_versions_to_delete]:
                     fn_path = os.path.join(file_path_versions_dir, fn)
                     os.remove(fn_path)
 
         for tup in arr:
             file_path, should_overwrite, should_create_directories = tup
-            if self.file_exists(file_path) and not should_overwrite:
+            if cls.file_exists(file_path) and not should_overwrite:
                 raise FileExistsError(f'File at {file_path} already exists.')
 
             if should_create_directories:
-                self.create_parent_directories(file_path)
+                cls.create_parent_directories(file_path)
 
             write_type = 'wb' if content and type(content) is bytes else 'w'
             yield file_path, write_type
 
     @classmethod
-    def write(
-        self,
-        repo_path: str,
-        dir_path: str,
-        filename: str,
-        content: str,
-        create_directories_if_not_exist: bool = True,
-        file_version_only: bool = False,
-        overwrite: bool = True,
-    ) -> None:
-        for file_path, write_type in self.write_preprocess(
-            repo_path,
-            dir_path,
-            filename,
-            content,
-            create_directories_if_not_exist=create_directories_if_not_exist,
-            file_version_only=file_version_only,
-            overwrite=overwrite,
-        ):
+    def write(cls, repo_path: str, dir_path: str, filename: str, content: str, create_directories_if_not_exist: bool = True, file_version_only: bool = False, overwrite: bool = True) -> None:
+        for file_path, write_type in cls.write_preprocess(repo_path, dir_path, filename, content, create_directories_if_not_exist=create_directories_if_not_exist, file_version_only=file_version_only, overwrite=overwrite):
             kwargs = dict(
                 mode=write_type,
             )
@@ -217,28 +170,11 @@ class File:
             with open(file_path, **kwargs) as f:
                 if content:
                     f.write(content)
-        self.validate_content(dir_path, filename, content)
+        cls.validate_content(dir_path, filename, content)
 
     @classmethod
-    async def write_async(
-        self,
-        repo_path: str,
-        dir_path: str,
-        filename: str,
-        content: str,
-        create_directories_if_not_exist: bool = True,
-        file_version_only: bool = False,
-        overwrite: bool = True,
-    ) -> None:
-        for file_path, write_type in self.write_preprocess(
-            repo_path,
-            dir_path,
-            filename,
-            content,
-            create_directories_if_not_exist=create_directories_if_not_exist,
-            file_version_only=file_version_only,
-            overwrite=overwrite,
-        ):
+    async def write_async(cls, repo_path: str, dir_path: str, filename: str, content: str, create_directories_if_not_exist: bool = True, file_version_only: bool = False, overwrite: bool = True) -> None:
+        for file_path, write_type in cls.write_preprocess(repo_path, dir_path, filename, content, create_directories_if_not_exist=create_directories_if_not_exist, file_version_only=file_version_only, overwrite=overwrite):
             kwargs = dict(
                 mode=write_type,
             )
@@ -355,7 +291,7 @@ def traverse(name: str, is_dir: str, path: str, disabled=False, depth=1) -> Dict
     if depth >= MAX_DEPTH:
         return tree_entry
     can_access_children = name[0] == '.' or name in INACCESSIBLE_DIRS
-    tree_entry['children'] = list(
+    tree_entry['children'] = [
         traverse(
             entry.name,
             entry.is_dir(follow_symlinks=False),
@@ -364,8 +300,11 @@ def traverse(name: str, is_dir: str, path: str, disabled=False, depth=1) -> Dict
             depth + 1,
         )
         for entry in sorted(
-            filter(lambda entry: entry.name not in BLACKLISTED_DIRS, os.scandir(path)),
+            filter(
+                lambda entry: entry.name not in BLACKLISTED_DIRS,
+                os.scandir(path),
+            ),
             key=lambda entry: entry.name,
         )
-    )
+    ]
     return tree_entry

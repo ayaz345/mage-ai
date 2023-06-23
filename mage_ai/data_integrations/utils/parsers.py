@@ -10,7 +10,7 @@ def parse_logs_and_json(input_string: str) -> str:
         is_log = False
         try:
             data = json.loads(line)
-            is_log = type(data) is dict and 'LOG' == data.get('type')
+            is_log = type(data) is dict and data.get('type') == 'LOG'
         except json.decoder.JSONDecodeError:
             pass
         if is_log:

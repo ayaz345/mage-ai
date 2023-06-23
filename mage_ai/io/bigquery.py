@@ -68,11 +68,7 @@ FROM {schema}.INFORMATION_SCHEMA.COLUMNS
 WHERE TABLE_NAME = '{table_name}'
 """)
 
-        column_types = {}
-        for col, col_type in results:
-            column_types[col.lower()] = col_type
-
-        return column_types
+        return {col.lower(): col_type for col, col_type in results}
 
     def alter_table(
         self,

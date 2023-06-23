@@ -17,7 +17,7 @@ from mage_ai.orchestration.db.models.oauth import Oauth2AccessToken, Oauth2Appli
 class OauthResource(GenericResource):
     @classmethod
     @safe_db_query
-    def create(self, payload, user, **kwargs):
+    def create(cls, payload, user, **kwargs):
         error = ApiError.RESOURCE_INVALID.copy()
 
         provider = payload.get('provider')
@@ -55,14 +55,18 @@ class OauthResource(GenericResource):
                 token=token,
             )
 
-        return self(dict(
-            authenticated=True,
-            expires=access_token.expires,
-            provider=provider,
-        ), user, **kwargs)
+        return cls(
+            dict(
+                authenticated=True,
+                expires=access_token.expires,
+                provider=provider,
+            ),
+            user,
+            **kwargs
+        )
 
     @classmethod
-    def member(self, pk, user, **kwargs):
+    def member(cls, pk, user, **kwargs):
         model = dict(provider=pk)
 
         error = ApiError.RESOURCE_INVALID.copy()
@@ -71,10 +75,9 @@ class OauthResource(GenericResource):
             raise ApiError(error)
 
         access_tokens = access_tokens_for_provider(pk)
-        authenticated = len(access_tokens) >= 1
-        if authenticated:
+        if authenticated := len(access_tokens) >= 1:
             model['authenticated'] = authenticated
-            model['expires'] = max([access_token.expires for access_token in access_tokens])
+            model['expires'] = max(access_token.expires for access_token in access_tokens)
         else:
             redirect_uri = kwargs.get('query', {}).get('redirect_uri', [None])
             if redirect_uri:
@@ -90,10 +93,7 @@ class OauthResource(GenericResource):
                     scope='repo',
                     state=GITHUB_STATE,
                 )
-                query_strings = []
-                for k, v in query.items():
-                    query_strings.append(f'{k}={v}')
-
+                query_strings = [f'{k}={v}' for k, v in query.items()]
                 model['url'] = f"https://github.com/login/oauth/authorize?{'&'.join(query_strings)}"
 
-        return self(model, user, **kwargs)
+        return cls(model, user, **kwargs)

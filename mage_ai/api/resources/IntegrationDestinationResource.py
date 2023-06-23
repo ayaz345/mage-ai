@@ -9,23 +9,19 @@ from mage_ai.server.api.integration_sources import get_collection
 class IntegrationDestinationResource(GenericResource):
     @classmethod
     @safe_db_query
-    async def collection(self, query, meta, user, **kwargs):
+    async def collection(cls, query, meta, user, **kwargs):
         collection = get_collection('destinations', DESTINATIONS)
 
-        return self.build_result_set(
-            collection,
-            user,
-            **kwargs,
-        )
+        return cls.build_result_set(collection, user, **kwargs)
 
     @classmethod
     @safe_db_query
-    def create(self, payload, user, **kwargs):
+    def create(cls, payload, user, **kwargs):
         error_message = None
         success = False
 
         action_type = payload['action_type']
-        if 'test_connection' == action_type:
+        if action_type == 'test_connection':
             pipeline_uuid = payload['pipeline_uuid']
             pipeline = IntegrationPipeline.get(pipeline_uuid)
             config = payload['config']
@@ -36,4 +32,4 @@ class IntegrationDestinationResource(GenericResource):
             except Exception as e:
                 error_message = str(e)
 
-        return self(dict(error_message=error_message, success=success), user, **kwargs)
+        return cls(dict(error_message=error_message, success=success), user, **kwargs)

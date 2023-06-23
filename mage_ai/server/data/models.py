@@ -43,12 +43,10 @@ class FeatureSet(Model):
             self.data_orig = df
 
     def __repr__(self):
-        formatted_suggestions = []
-        for idx, s in enumerate(self.suggestions):
-            formatted_suggestions.append(
-                f'{idx + 1}. {s["title"]}({s["action_payload"]["action_arguments"]}):'
-                f' {s["message"]}',
-            )
+        formatted_suggestions = [
+            f'{idx + 1}. {s["title"]}({s["action_payload"]["action_arguments"]}): {s["message"]}'
+            for idx, s in enumerate(self.suggestions)
+        ]
         suggestion_str = '\n'.join(formatted_suggestions)
         return f'<FeatureSet {self.id}> Cleaning suggestions:\n{suggestion_str}'
 
@@ -117,9 +115,7 @@ class FeatureSet(Model):
     @property
     def pipeline(self):
         pipeline_id = self.metadata.get('pipeline_id')
-        if pipeline_id is None:
-            return None
-        return Pipeline(id=pipeline_id)
+        return None if pipeline_id is None else Pipeline(id=pipeline_id)
 
     @property
     def sample_data(self):

@@ -23,7 +23,7 @@ class UserResource(DatabaseResource):
 
     @classmethod
     @safe_db_query
-    def collection(self, query_arg, meta, user, **kwargs):
+    def collection(cls, query_arg, meta, user, **kwargs):
         results = (
             User.
             query.
@@ -55,7 +55,7 @@ class UserResource(DatabaseResource):
             if not payload.get(key):
                 missing_values.append(key)
 
-        if len(missing_values) >= 1:
+        if missing_values:
             error.update(
                 {'message': 'Missing required values: {}.'.format(', '.join(missing_values))})
             raise ApiError(error)
@@ -146,13 +146,12 @@ class UserResource(DatabaseResource):
                         {'message': 'Admins cannot make other users Owners.'})
                     raise ApiError(error)
 
-        password = payload.get('password')
-        if password:
+        if password := payload.get('password'):
             password_current = payload.get('password_current')
             password_confirmation = payload.get('password_confirmation')
 
             if self.current_user.id == self.id or \
-                    (not self.current_user.owner and self.current_user.roles & 1 == 0):
+                        (not self.current_user.owner and self.current_user.roles & 1 == 0):
                 if not password_current or not verify_password(
                     password_current,
                     self.password_hash,
@@ -186,13 +185,12 @@ class UserResource(DatabaseResource):
 
     @safe_db_query
     def token(self):
-        oauth_token = self.model_options.get('oauth_token')
-        if oauth_token:
+        if oauth_token := self.model_options.get('oauth_token'):
             return encode_token(oauth_token.token, oauth_token.expires)
 
     @classmethod
     @safe_db_query
-    def check_roles(self, role_ids):
+    def check_roles(cls, role_ids):
         missing_ids = []
         roles_new = []
         for role_id in role_ids:
@@ -202,7 +200,7 @@ class UserResource(DatabaseResource):
             else:
                 roles_new.append(role)
 
-        if len(missing_ids) > 0:
+        if missing_ids:
             error = ApiError.RESOURCE_INVALID.copy()
             error.update(
                 {'message': f'Roles with ids: {missing_ids} do not exist'})

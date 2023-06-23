@@ -35,20 +35,16 @@ def get_access_token_secret_name(user: User = None) -> str:
 
 class SyncResource(GenericResource):
     @classmethod
-    def collection(self, query, meta, user, **kwargs):
-        sync_config = self.get_project_sync_config(user)
-        return self.build_result_set(
-            [sync_config],
-            user,
-            **kwargs,
-        )
+    def collection(cls, query, meta, user, **kwargs):
+        sync_config = cls.get_project_sync_config(user)
+        return cls.build_result_set([sync_config], user, **kwargs)
 
     @classmethod
     @safe_db_query
-    def create(self, payload, user, **kwargs):
-        user_settings = payload.pop('user_git_settings', dict())
+    def create(cls, payload, user, **kwargs):
+        user_settings = payload.pop('user_git_settings', {})
 
-        payload = self.update_user_settings(payload)
+        payload = cls.update_user_settings(payload)
         preferences = get_preferences()
         updated_config = dict(preferences.sync_config, **payload)
         # default repo_path to os.getcwd()
@@ -58,7 +54,7 @@ class SyncResource(GenericResource):
         # Update user git settings if they are included
         if user:
             # Validate payloads
-            user_payload = self.update_user_settings(user_settings, user=user)
+            user_payload = cls.update_user_settings(user_settings, user=user)
             UserGitConfig.load(config=user_payload)
 
             repo_path = get_repo_path()
@@ -80,12 +76,12 @@ class SyncResource(GenericResource):
 
         GitSync(sync_config)
 
-        return self(get_preferences().sync_config, user, **kwargs)
+        return cls(get_preferences().sync_config, user, **kwargs)
 
     @classmethod
-    def member(self, pk, user, **kwargs):
-        sync_config = self.get_project_sync_config(user)
-        return self(sync_config, user, **kwargs)
+    def member(cls, pk, user, **kwargs):
+        sync_config = cls.get_project_sync_config(user)
+        return cls(sync_config, user, **kwargs)
 
     def update(self, payload, **kwargs):
         self.model.pop('user_git_settings')
@@ -100,7 +96,7 @@ class SyncResource(GenericResource):
         return self
 
     @classmethod
-    def get_project_sync_config(self, user):
+    def get_project_sync_config(cls, user):
         sync_config = get_preferences().sync_config
         # Make it backwards compatible with storing all of the git settings in the user
         # preferences field.
@@ -111,34 +107,33 @@ class SyncResource(GenericResource):
         return sync_config
 
     @classmethod
-    def update_user_settings(self, payload, user=None) -> Dict:
+    def update_user_settings(cls, payload, user=None) -> Dict:
         user_payload = payload.copy()
         ssh_public_key = user_payload.pop('ssh_public_key', None)
         ssh_private_key = user_payload.pop('ssh_private_key', None)
 
         if ssh_public_key:
             secret_name = get_ssh_public_key_secret_name(user=user)
-            secret = Secret.query.filter(
-                Secret.name == secret_name).one_or_none()
-            if secret:
+            if secret := Secret.query.filter(
+                Secret.name == secret_name
+            ).one_or_none():
                 secret.delete()
             create_secret(secret_name, ssh_public_key)
             user_payload['ssh_public_key_secret_name'] = secret_name
         if ssh_private_key:
             secret_name = get_ssh_private_key_secret_name(user=user)
-            secret = Secret.query.filter(
-                Secret.name == secret_name).one_or_none()
-            if secret:
+            if secret := Secret.query.filter(
+                Secret.name == secret_name
+            ).one_or_none():
                 secret.delete()
             create_secret(secret_name, ssh_private_key)
             user_payload['ssh_private_key_secret_name'] = secret_name
 
-        access_token = user_payload.pop('access_token', None)
-        if access_token:
+        if access_token := user_payload.pop('access_token', None):
             secret_name = get_access_token_secret_name(user=user)
-            secret = Secret.query.filter(
-                Secret.name == secret_name).one_or_none()
-            if secret:
+            if secret := Secret.query.filter(
+                Secret.name == secret_name
+            ).one_or_none():
                 secret.delete()
             create_secret(secret_name, access_token)
             user_payload['access_token_secret_name'] = secret_name

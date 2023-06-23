@@ -15,8 +15,7 @@ class BlockRunPolicy(BasePolicy):
         if pipeline_uuid:
             return Permission.Entity.PIPELINE, pipeline_uuid
 
-        parent_model = self.options.get('parent_model')
-        if parent_model:
+        if parent_model := self.options.get('parent_model'):
             return Permission.Entity.PIPELINE, parent_model.pipeline_uuid
 
         return super().entity

@@ -6,29 +6,21 @@ from mage_ai.orchestration.monitor.monitor_stats import MonitorStats
 class MonitorStatResource(GenericResource):
     @classmethod
     @safe_db_query
-    def member(self, pk, user, **kwargs):
+    def member(cls, pk, user, **kwargs):
         query = kwargs.get('query', {})
 
-        pipeline_uuids = query.get('pipeline_uuid', None)
-        if pipeline_uuids:
+        if pipeline_uuids := query.get('pipeline_uuid', None):
             pipeline_uuid = pipeline_uuids[0]
         else:
             pipeline_uuid = None
 
-        start_times = query.get('start_time', None)
-        if start_times:
+        if start_times := query.get('start_time', None):
             start_time = start_times[0]
         else:
             start_time = None
 
-        end_times = query.get('end_time', None)
-        if end_times:
-            end_time = end_times[0]
-        else:
-            end_time = None
-
-        pipeline_schedule_ids = query.get('pipeline_schedule_id', None)
-        if pipeline_schedule_ids:
+        end_time = end_times[0] if (end_times := query.get('end_time', None)) else None
+        if pipeline_schedule_ids := query.get('pipeline_schedule_id', None):
             pipeline_schedule_id = pipeline_schedule_ids[0]
         else:
             pipeline_schedule_id = None
@@ -41,7 +33,11 @@ class MonitorStatResource(GenericResource):
             pipeline_schedule_id=pipeline_schedule_id,
         )
 
-        return self(dict(
-            stats_type=pk,
-            stats=stats,
-        ), user, **kwargs)
+        return cls(
+            dict(
+                stats_type=pk,
+                stats=stats,
+            ),
+            user,
+            **kwargs
+        )

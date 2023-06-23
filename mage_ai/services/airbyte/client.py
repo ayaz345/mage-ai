@@ -54,11 +54,11 @@ class AirbyteClient:
             self.logger.debug(f'Health check: {data}')
 
             key = 'available' if 'available' in data else 'db'
-            status = response.json()[key]
-            if not status:
+            if status := response.json()[key]:
+                return True
+            else:
                 raise UnhealthyServer(f"Airbyte server health: {status}")
 
-            return True
         except httpx.HTTPStatusError as e:
             raise UnhealthyServer() from e
 

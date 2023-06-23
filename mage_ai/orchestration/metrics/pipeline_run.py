@@ -151,7 +151,7 @@ def get_metrics(logs_by_uuid: Dict, key_and_key_metrics: List[Tuple[str, List[st
             for logs in logs_for_uuid:
                 temp_metrics = {}
 
-                for idx, l in enumerate(logs):
+                for l in logs:
                     tags = parse_line(l)
 
                     for key_metric in key_metrics:

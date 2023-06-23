@@ -12,7 +12,7 @@ from mage_ai.shared.hash import merge_dict
 class AutocompleteItemResource(GenericResource):
     @classmethod
     @safe_db_query
-    async def collection(self, query, meta, user, **kwargs):
+    async def collection(cls, query, meta, user, **kwargs):
         repo_path = get_repo_path()
 
         collection = []
@@ -41,14 +41,14 @@ class AutocompleteItemResource(GenericResource):
                 {},
             ),
         ]:
-            for filename, d in mapping.items():
-                collection.append(merge_dict(d, dict(
-                    group=file_group,
-                    id=filename,
-                )))
-
-        return self.build_result_set(
-            collection,
-            user,
-            **kwargs,
-        )
+            collection.extend(
+                merge_dict(
+                    d,
+                    dict(
+                        group=file_group,
+                        id=filename,
+                    ),
+                )
+                for filename, d in mapping.items()
+            )
+        return cls.build_result_set(collection, user, **kwargs)

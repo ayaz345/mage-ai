@@ -17,16 +17,15 @@ import re
 
 
 def __create_new_struct_fields(feature_set, transformer_action):
-    new_fields = []
-
-    for output_feature in transformer_action.get('outputs', []):
-        if output_feature['uuid'] not in feature_set.schema.fieldNames():
-            new_fields.append(StructField(
-                output_feature['uuid'],
-                COLUMN_TYPE_MAPPING[output_feature['column_type']](),
-                True,
-            ))
-    return new_fields
+    return [
+        StructField(
+            output_feature['uuid'],
+            COLUMN_TYPE_MAPPING[output_feature['column_type']](),
+            True,
+        )
+        for output_feature in transformer_action.get('outputs', [])
+        if output_feature['uuid'] not in feature_set.schema.fieldNames()
+    ]
 
 
 def transform_add_distance_between(feature_set, transformer_action, sort_options={}):
@@ -92,32 +91,30 @@ def transform_count_distinct(feature_set, transformer_action, sort_options={}):
 
 
 def transform_drop_duplicate(feature_set, transformer_action, sort_options={}):
-    if sort_options.get('columns') is not None:
-        sort_columns = sort_options.get('columns')
-        sort_ascending = sort_options.get('ascending', True)
-        if transformer_action['action_options'].get('keep', 'last') == 'last':
-            sort_ascending = not sort_ascending
-        unique_by_columns = transformer_action['action_arguments']
-        rnum_col = 'rnum'
-
-        window = Window.partitionBy(unique_by_columns)
-        window = window.orderBy(*[
-            F.col(col).asc() if sort_ascending else F.col(col).desc() for col in sort_columns
-        ])
-        row_number = F.row_number().over(window)
-
-        feature_set = feature_set.withColumn(rnum_col, row_number)
-        feature_set = feature_set[feature_set[rnum_col] == 1]
-
-        return feature_set.drop(rnum_col)
-    else:
+    if sort_options.get('columns') is None:
         return feature_set.dropDuplicates(transformer_action['action_arguments'])
+    sort_columns = sort_options.get('columns')
+    sort_ascending = sort_options.get('ascending', True)
+    if transformer_action['action_options'].get('keep', 'last') == 'last':
+        sort_ascending = not sort_ascending
+    unique_by_columns = transformer_action['action_arguments']
+    rnum_col = 'rnum'
+
+    window = Window.partitionBy(unique_by_columns)
+    window = window.orderBy(*[
+        F.col(col).asc() if sort_ascending else F.col(col).desc() for col in sort_columns
+    ])
+    row_number = F.row_number().over(window)
+
+    feature_set = feature_set.withColumn(rnum_col, row_number)
+    feature_set = feature_set[feature_set[rnum_col] == 1]
+
+    return feature_set.drop(rnum_col)
 
 
 def transform_filter(feature_set, transformer_action, sort_options={}):
     action_code = transformer_action['action_code']
-    match = re.search(r'^[\w.]+\s{1}', action_code)
-    if match:
+    if match := re.search(r'^[\w.]+\s{1}', action_code):
         column_name = match[0].strip()
     else:
         column_name = None

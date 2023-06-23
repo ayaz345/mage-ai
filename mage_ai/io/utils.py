@@ -6,11 +6,7 @@ def format_value(value):
         return 'NULL'
 
     if type(value) is bool:
-        if value is True:
-            return 'TRUE'
-        else:
-            return 'FALSE'
-
+        return 'TRUE' if value is True else 'FALSE'
     if type(value) is int or type(value) is float:
         return str(value)
 
@@ -21,7 +17,7 @@ def format_value(value):
 
 
 def escape_quotes(line: str, single: bool = True, double: bool = True) -> str:
-    new_line = str(line)
+    new_line = line
     if single:
         new_line = new_line.replace("'", "''")
     if double:

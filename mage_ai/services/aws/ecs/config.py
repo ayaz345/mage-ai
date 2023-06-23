@@ -20,14 +20,14 @@ class EcsConfig(BaseConfig):
     memory: int = 1024
 
     @classmethod
-    def load_extra_config(self):
+    def load_extra_config(cls):
         ecs_container_metadata_uri = os.getenv(ECS_CONTAINER_METADATA_URI_VAR)
         if ecs_container_metadata_uri is None:
-            return dict()
+            return {}
 
         container_metadata = requests.get(ecs_container_metadata_uri).json()
         container_name = container_metadata['Name']
-        task_metadata = requests.get(ecs_container_metadata_uri + '/task').json()
+        task_metadata = requests.get(f'{ecs_container_metadata_uri}/task').json()
         cluster = task_metadata.get('Cluster').split('/')[-1]
         task_definition = task_metadata.get('Family')
         task_arn = task_metadata.get('TaskARN')
@@ -49,9 +49,7 @@ class EcsConfig(BaseConfig):
                     subnets.append(detail['value'])
                 elif detail['name'] == 'networkInterfaceId':
                     network_interface = ec2_client.NetworkInterface(detail['value'])
-                    for group in network_interface.groups:
-                        security_groups.append(group['GroupId'])
-
+                    security_groups.extend(group['GroupId'] for group in network_interface.groups)
         return dict(
             cluster=cluster,
             subnets=subnets,

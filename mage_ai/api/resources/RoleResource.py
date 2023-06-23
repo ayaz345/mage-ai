@@ -9,7 +9,7 @@ class RoleResource(GenericResource):
 
     @classmethod
     @safe_db_query
-    def collection(self, query, meta, user, **kwargs):
+    def collection(cls, query, meta, user, **kwargs):
         from mage_ai.orchestration.db.models.oauth import Permission
 
         limit_roles = query.get('limit_roles', [None])
@@ -36,9 +36,7 @@ class RoleResource(GenericResource):
                     Permission.entity_id.in_(entity_ids),
                 )
             permissions = permissions_query.all()
-            roles = []
-            for permission in permissions:
-                roles.append(permission.role)
+            roles = [permission.role for permission in permissions]
         else:
             roles = Role.query.all()
 
@@ -56,4 +54,4 @@ class RoleResource(GenericResource):
                 roles,
             ))
 
-        return self.build_result_set(roles, user, **kwargs)
+        return cls.build_result_set(roles, user, **kwargs)

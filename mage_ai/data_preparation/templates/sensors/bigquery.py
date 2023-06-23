@@ -26,7 +26,4 @@ def query_bigquery_and_check_condition(*args, **kwargs) -> bool:
     df = loader.load(query)
 
     # Add your checks here
-    if df.empty:
-        return False
-
-    return True
+    return not df.empty

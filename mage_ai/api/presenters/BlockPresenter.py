@@ -54,7 +54,7 @@ class BlockPresenter(BasePresenter):
                 state_stream=state_stream,
             )
 
-            if 'dbt' == display_format:
+            if display_format == 'dbt':
                 upstream_blocks = add_blocks_upstream_from_refs(
                     self.model,
                     add_current_block=True,

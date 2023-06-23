@@ -12,7 +12,7 @@ from mage_ai.server.kernels import DEFAULT_KERNEL_NAME, KernelName, kernel_manag
 class KernelResource(GenericResource):
     @classmethod
     @safe_db_query
-    def collection(self, query, meta, user, **kwargs):
+    def collection(cls, query, meta, user, **kwargs):
         kernels = []
 
         for kernel_name in KernelName:
@@ -20,15 +20,11 @@ class KernelResource(GenericResource):
             if kernel.has_kernel:
                 kernels.append(kernel)
 
-        return self.build_result_set(
-            kernels,
-            user,
-            **kwargs,
-        )
+        return cls.build_result_set(kernels, user, **kwargs)
 
     @classmethod
     @safe_db_query
-    def member(self, pk, user, **kwargs):
+    def member(cls, pk, user, **kwargs):
         kernels_by_id = {}
 
         for kernel_name in KernelName:
@@ -38,7 +34,7 @@ class KernelResource(GenericResource):
 
         kernel = kernels_by_id.get(pk) or kernel_managers[DEFAULT_KERNEL_NAME]
 
-        return self(kernel, user, **kwargs)
+        return cls(kernel, user, **kwargs)
 
     @safe_db_query
     def update(self, payload, **kwargs):
@@ -46,9 +42,9 @@ class KernelResource(GenericResource):
 
         switch_active_kernel(self.model.kernel_name)
 
-        if 'interrupt' == action_type:
+        if action_type == 'interrupt':
             interrupt_kernel()
-        elif 'restart' == action_type:
+        elif action_type == 'restart':
             try:
                 restart_kernel()
             except RuntimeError as e:

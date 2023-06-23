@@ -39,7 +39,7 @@ class ApiInstancesHandler(BaseHandler):
                 instances = ecs_instance_manager.list_tasks()
             except Exception as e:
                 logger.error(str(e))
-                instances = list()
+                instances = []
         elif cluster_type == ClusterType.CLOUD_RUN:
             from mage_ai.cluster_manager.gcp.cloud_run_service_manager import (
                 CloudRunServiceManager,
@@ -127,11 +127,12 @@ class ApiInstancesHandler(BaseHandler):
                     os.getenv(KUBE_STORAGE_CLASS_NAME)
                 )
                 service_account_name = instance_payload.get('service_account_name')
-                container_config_yaml = instance_payload.get('container_config')
-                container_config = None
-                if container_config_yaml:
+                if container_config_yaml := instance_payload.get(
+                    'container_config'
+                ):
                     container_config = yaml.full_load(container_config_yaml)
-
+                else:
+                    container_config = None
                 k8s_workload_manager = WorkloadManager(namespace)
                 k8s_workload_manager.create_workload(
                     name,

@@ -41,7 +41,7 @@ class CloudRunServiceManager:
             project=self.project_id
         ).execute()
 
-        ip_map = dict()
+        ip_map = {}
         for rule in forwarding_rules.get('items', []):
             rule_name = rule.get('name')
             # Get service name by removing '-urlmap'
@@ -215,9 +215,7 @@ class CloudRunServiceManager:
         )
 
     def __try_creating_resource(self, request, resource: str):
-        attempts = 0
-        while attempts < 10:
-            attempts += 1
+        for _ in range(10):
             try:
                 response = request.execute()
                 print(f'{resource} created!')

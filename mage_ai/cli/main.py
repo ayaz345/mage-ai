@@ -201,14 +201,13 @@ def run(
     from mage_ai.settings import SENTRY_DSN, SENTRY_TRACES_SAMPLE_RATE
     from mage_ai.shared.hash import merge_dict
 
-    sentry_dsn = SENTRY_DSN
-    if sentry_dsn:
+    if sentry_dsn := SENTRY_DSN:
         sentry_sdk.init(
             sentry_dsn,
             traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
         )
 
-    runtime_variables = dict()
+    runtime_variables = {}
     if runtime_vars is not None:
         runtime_variables = parse_runtime_variables(runtime_vars)
 

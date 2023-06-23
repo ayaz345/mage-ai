@@ -74,9 +74,10 @@ class OAuthMiddleware(RequestHandler):
             oauth_client = Oauth2Application.query_client(api_key)
 
             self.request.__setattr__('oauth_client', oauth_client)
-            if not oauth_client:
-                self.request.__setattr__('error', ApiError.INVALID_API_KEY)
-            elif oauth_client.client_id != OAUTH2_APPLICATION_CLIENT_ID:
+            if (
+                not oauth_client
+                or oauth_client.client_id != OAUTH2_APPLICATION_CLIENT_ID
+            ):
                 self.request.__setattr__('error', ApiError.INVALID_API_KEY)
             else:
                 should_check = False

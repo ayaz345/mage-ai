@@ -55,7 +55,7 @@ class BlockExecutor:
         if template_runtime_configuration:
             self.block.template_runtime_configuration = template_runtime_configuration
         try:
-            result = dict()
+            result = {}
 
             tags = self._build_tags(**kwargs)
 
@@ -63,7 +63,7 @@ class BlockExecutor:
             if on_start is not None:
                 on_start(self.block_uuid)
             pipeline_run = PipelineRun.query.get(kwargs['pipeline_run_id']) \
-                if 'pipeline_run_id' in kwargs else None
+                    if 'pipeline_run_id' in kwargs else None
 
             conditional_result = self._execute_conditional(
                 dynamic_block_index=dynamic_block_index,
@@ -93,7 +93,7 @@ class BlockExecutor:
                 from mage_ai.shared.retry import retry
 
                 if retry_config is None:
-                    retry_config = dict()
+                    retry_config = {}
                 if type(retry_config) is not RetryConfig:
                     retry_config = RetryConfig.load(config=retry_config)
 
@@ -196,7 +196,7 @@ class BlockExecutor:
         **kwargs,
     ) -> Dict:
         if logging_tags is None:
-            logging_tags = dict()
+            logging_tags = {}
         result = self.block.execute_sync(
             analyze_outputs=analyze_outputs,
             execution_partition=self.execution_partition,
@@ -360,7 +360,7 @@ class BlockExecutor:
             tags (dict): tags used in logging
         """
         if tags is None:
-            tags = dict()
+            tags = {}
         if not block_run_id and not callback_url:
             return
         try:

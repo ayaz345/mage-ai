@@ -18,24 +18,5 @@ class K8sExecutorConfig(BaseConfig):
     resource_requests: Dict = None
 
     @classmethod
-    def load(self, config_path: str = None, config: Dict = None):
-        executor_config = super().load(config_path=config_path, config=config)
-        # if executor_config.resource_limits is not None and \
-        #         type(executor_config.resource_limits) is dict:
-        #     try:
-        #         executor_config.resource_limits = K8sResourceConfig.load(
-        #             config=executor_config.resource_limits,
-        #         )
-        #     except Exception:
-        #         traceback.print_exc()
-        #         executor_config.resource_limits = None
-        # if executor_config.resource_requests is not None and \
-        #         type(executor_config.resource_requests) is dict:
-        #     try:
-        #         executor_config.resource_requests = K8sResourceConfig.load(
-        #             config=executor_config.resource_requests,
-        #         )
-        #     except Exception:
-        #         traceback.print_exc()
-        #         executor_config.resource_requests = None
-        return executor_config
+    def load(cls, config_path: str = None, config: Dict = None):
+        return super().load(config_path=config_path, config=config)

@@ -20,10 +20,7 @@ def authenticate_client_and_token(client_id: str, token: str) -> Tuple[Oauth2Acc
         Oauth2AccessToken.token == token,
     ).first()
 
-    valid = False
-    if oauth_token:
-        valid = oauth_token.is_valid()
-
+    valid = oauth_token.is_valid() if oauth_token else False
     return oauth_token, valid
 
 

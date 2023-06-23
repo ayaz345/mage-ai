@@ -15,11 +15,15 @@ def default_resolution(df: DataFrame, action: Dict) -> Tuple[bool, str]:
 
 
 def resolve_filter_action(df: DataFrame, action: Dict) -> Tuple[bool, str]:
-    for name in df.columns:
-        if re.search(r'\s', name):
-            return (
+    return next(
+        (
+            (
                 False,
                 'Column name contains whitespace or newline '
                 'characters which cannot be used in filter actions',
             )
-    return True, None
+            for name in df.columns
+            if re.search(r'\s', name)
+        ),
+        (True, None),
+    )

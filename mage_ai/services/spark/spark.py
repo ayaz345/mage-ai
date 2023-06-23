@@ -40,36 +40,35 @@ def get_spark_session(spark_config: SparkConfig):
     from pyspark.conf import SparkConf
     from pyspark.sql import SparkSession
 
-    if spark_config:
-        active_session = SparkSession.getActiveSession()
-        print('Check the given spark_config against the active Spark session.')
-        if has_same_spark_config(
-            spark_session=active_session,
-            spark_config=spark_config
-        ):
-            print('Reuse the active Spark session.')
-            return active_session
-        else:
-            print('Create a new Spark session.')
-            if active_session:
-                active_session.stop()
-            conf = SparkConf()
-            if spark_config.app_name:
-                conf.setAppName(spark_config.app_name)
-            if spark_config.spark_master:
-                conf.setMaster(spark_config.spark_master)
-            if spark_config.spark_home:
-                conf.setSparkHome(spark_config.spark_home)
-            if spark_config.executor_env:
-                env_kv_pairs = list(spark_config.executor_env.items())
-                conf.setExecutorEnv(key=None, value=None, pairs=env_kv_pairs)
-            if spark_config.spark_jars:
-                conf.set('spark.jars', ','.join(spark_config.spark_jars))
-            if spark_config.others:
-                others_kv_pairs = list(spark_config.others.items())
-                conf.setAll(others_kv_pairs)
-
-            return SparkSession.builder.config(conf=conf).getOrCreate()
-    else:
+    if not spark_config:
         return SparkSession.builder.master(
             os.getenv('SPARK_MASTER_HOST', 'local')).getOrCreate()
+    active_session = SparkSession.getActiveSession()
+    print('Check the given spark_config against the active Spark session.')
+    if has_same_spark_config(
+        spark_session=active_session,
+        spark_config=spark_config
+    ):
+        print('Reuse the active Spark session.')
+        return active_session
+    else:
+        print('Create a new Spark session.')
+        if active_session:
+            active_session.stop()
+        conf = SparkConf()
+        if spark_config.app_name:
+            conf.setAppName(spark_config.app_name)
+        if spark_config.spark_master:
+            conf.setMaster(spark_config.spark_master)
+        if spark_config.spark_home:
+            conf.setSparkHome(spark_config.spark_home)
+        if spark_config.executor_env:
+            env_kv_pairs = list(spark_config.executor_env.items())
+            conf.setExecutorEnv(key=None, value=None, pairs=env_kv_pairs)
+        if spark_config.spark_jars:
+            conf.set('spark.jars', ','.join(spark_config.spark_jars))
+        if spark_config.others:
+            others_kv_pairs = list(spark_config.others.items())
+            conf.setAll(others_kv_pairs)
+
+        return SparkSession.builder.config(conf=conf).getOrCreate()

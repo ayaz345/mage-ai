@@ -4,7 +4,7 @@ import multiprocessing
 def start_session_and_run(*target_args):
     from mage_ai.orchestration.db import db_connection
 
-    if len(target_args) == 0:
+    if not target_args:
         return None
     target = target_args[0]
     args = target_args[1:]

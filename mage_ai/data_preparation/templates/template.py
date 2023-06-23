@@ -129,11 +129,13 @@ def __fetch_data_loader_templates(
     else:
         template_folder = 'data_loaders'
 
-    default_template = template_folder + '/' + 'default.jinja'
+    default_template = f'{template_folder}/default.jinja'
     if data_source is None:
         template_path = default_template
     else:
-        data_source_template = template_folder + '/' + f'{data_source.lower()}.{file_extension}'
+        data_source_template = (
+            f'{template_folder}/' + f'{data_source.lower()}.{file_extension}'
+        )
         if template_exists(data_source_template):
             template_path = data_source_template
         else:
@@ -155,9 +157,7 @@ def __fetch_transformer_templates(
     axis = config.get('axis')
     data_source = config.get('data_source')
     existing_code = config.get('existing_code', '')
-    suggested_action = config.get('suggested_action')
-
-    if suggested_action:
+    if suggested_action := config.get('suggested_action'):
         return build_template_from_suggestion(suggested_action)
 
     if data_source is not None:
@@ -230,11 +230,13 @@ def __fetch_data_exporter_templates(
     else:
         template_folder = 'data_exporters'
 
-    default_template = template_folder + '/' + 'default.jinja'
+    default_template = f'{template_folder}/default.jinja'
     if data_source is None:
         template_path = default_template
     else:
-        data_source_template = template_folder + '/' + f'{data_source.lower()}.{file_extension}'
+        data_source_template = (
+            f'{template_folder}/' + f'{data_source.lower()}.{file_extension}'
+        )
         if template_exists(data_source_template):
             template_path = data_source_template
         else:

@@ -56,7 +56,7 @@ class DictLogger():
             data['error_stacktrace'] = str(error),
 
         msg = simplejson.dumps(
-            merge_dict(self.logging_tags or dict(), merge_dict(kwargs, data)),
+            merge_dict(self.logging_tags or {}, merge_dict(kwargs, data)),
             default=encode_complex,
             ignore_nan=True,
         )

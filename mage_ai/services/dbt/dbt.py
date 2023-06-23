@@ -18,10 +18,7 @@ class DbtCloudClient(HttpClient):
     BASE_URL = DBT_CLOUD_BASE_URL
 
     def __init__(self, config: Union[Dict, DbtConfig]):
-        if type(config) is dict:
-            self.config = DbtConfig.load(config=config)
-        else:
-            self.config = config
+        self.config = DbtConfig.load(config=config) if type(config) is dict else config
         self.headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Token {self.config.api_token}',

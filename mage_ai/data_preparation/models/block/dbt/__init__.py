@@ -51,8 +51,7 @@ class DBTBlock(Block):
 
             targets = []
             profiles = await load_profiles_async(profile_name, profiles_full_path)
-            outputs = profiles.get('outputs')
-            if outputs:
+            if outputs := profiles.get('outputs'):
                 targets += sorted(list(outputs.keys()))
 
             projects[project_name] = dict(
@@ -70,8 +69,7 @@ class DBTBlock(Block):
                 profiles_full_path = os.path.join(dbt_dir, project_name, 'profiles.yml')
                 targets = []
                 profiles = await load_profiles_async(project_name, profiles_full_path)
-                outputs = profiles.get('outputs')
-                if outputs:
+                if outputs := profiles.get('outputs'):
                     targets += sorted(list(outputs.keys()))
 
                 projects[project_name] = dict(
@@ -235,9 +233,7 @@ class DBTBlock(Block):
                     target_path = attributes_dict['target_path']
 
                 if snapshot:
-                    query_string = compiled_query_string(self)
-                    if query_string:
-
+                    if query_string := compiled_query_string(self):
                         print('Compiled snapshot query string:')
                         for line in query_string.split('\n'):
                             print(f'|    {line.strip()}')
@@ -254,17 +250,21 @@ class DBTBlock(Block):
                             print(f'\n{json.dumps(run_results, indent=2)}\n')
 
                             for result in run_results['results']:
-                                if 'error' == result['status']:
+                                if result['status'] == 'error':
                                     raise Exception(result['message'])
                         except json.decoder.JSONDecodeError:
                             print(f'WARNING: no run results found at {run_results_file_path}.')
 
                 if is_sql and dbt_command in ['build', 'run']:
                     limit = 1000
-                    if self.downstream_blocks and \
-                            len(self.downstream_blocks) >= 1 and \
-                            not all([BlockType.DBT == block.type
-                                     for block in self.downstream_blocks]):
+                    if (
+                        self.downstream_blocks
+                        and len(self.downstream_blocks) >= 1
+                        and any(
+                            BlockType.DBT != block.type
+                            for block in self.downstream_blocks
+                        )
+                    ):
                         limit = None
 
                     try:

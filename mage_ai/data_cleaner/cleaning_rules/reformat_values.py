@@ -138,24 +138,22 @@ class StandardizeCapitalizationSubRule(ReformatValuesSubRule):
                 self.lowercase.append(column)
 
     def get_suggestions(self):
-        suggestions = []
         payloads = {'uppercase': self.uppercase, 'lowercase': self.lowercase}
-        for case in payloads:
-            if len(payloads[case]) != 0:
-                suggestions.append(
-                    self.action_builder(
-                        'Reformat values',
-                        f'Format entries in these columns as fully {case} to improve data quality.',
-                        ActionType.REFORMAT,
-                        action_arguments=payloads[case],
-                        axis=Axis.COLUMN,
-                        action_options={
-                            'reformat': 'caps_standardization',
-                            'capitalization': case,
-                        },
-                    )
-                )
-        return suggestions
+        return [
+            self.action_builder(
+                'Reformat values',
+                f'Format entries in these columns as fully {case} to improve data quality.',
+                ActionType.REFORMAT,
+                action_arguments=payloads[case],
+                axis=Axis.COLUMN,
+                action_options={
+                    'reformat': 'caps_standardization',
+                    'capitalization': case,
+                },
+            )
+            for case, value in payloads.items()
+            if len(value) != 0
+        ]
 
 
 class ConvertCurrencySubRule(ReformatValuesSubRule):
@@ -230,7 +228,7 @@ class ReformatDateSubRule(ReformatValuesSubRule):
         dtype = self.column_types[column]
         if dtype not in self.DATE_TYPES:
             return
-        if not self.exact_dtypes[column] is str:
+        if self.exact_dtypes[column] is not str:
             return
         clean_col = self.strip_column_for_date_parsing(column)
         clean_col = pd.to_datetime(clean_col, infer_datetime_format=True, errors='coerce')

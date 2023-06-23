@@ -59,19 +59,18 @@ class MonitorStats:
             **kwargs,
         )
         pipeline_runs = pipeline_runs.all()
-        stats_by_schedule_id = dict()
+        stats_by_schedule_id = {}
         for p in pipeline_runs:
             if p.pipeline_schedule is None:
                 continue
             if p.pipeline_schedule_id not in stats_by_schedule_id:
                 stats_by_schedule_id[p.pipeline_schedule_id] = dict(
-                    name=p.pipeline_schedule_name,
-                    data=dict(),
+                    name=p.pipeline_schedule_name, data={}
                 )
             created_at_formatted = p.created_at.strftime('%Y-%m-%d')
             data = stats_by_schedule_id[p.pipeline_schedule_id]['data']
             if created_at_formatted not in data:
-                data[created_at_formatted] = dict()
+                data[created_at_formatted] = {}
             if p.status not in data[created_at_formatted]:
                 data[created_at_formatted][p.status] = 1
             else:
@@ -97,9 +96,8 @@ class MonitorStats:
         def __mean_runtime(pipeline_runs):
             runtime_list = [(p.completed_at - p.created_at).total_seconds()
                             for p in pipeline_runs if p.completed_at > p.created_at]
-            if len(runtime_list) == 0:
-                return 0
-            return sum(runtime_list) / len(runtime_list)
+            return 0 if not runtime_list else sum(runtime_list) / len(runtime_list)
+
         pipeline_run_time_by_date = {k: __mean_runtime(v) for k, v in pipeline_run_by_date.items()}
         return {pipeline_uuid: dict(name=pipeline_uuid, data=pipeline_run_time_by_date)}
 
@@ -119,7 +117,7 @@ class MonitorStats:
         block_runs = block_runs.all()
 
         def __stats_func(block_runs):
-            count_by_status = dict()
+            count_by_status = {}
             for b in block_runs:
                 if b.status in count_by_status:
                     count_by_status[b.status] += 1
@@ -147,9 +145,7 @@ class MonitorStats:
         def __stats_func(block_runs):
             runtime_list = [(b.completed_at - b.created_at).total_seconds()
                             for b in block_runs if b.completed_at > b.created_at]
-            if len(runtime_list) == 0:
-                return 0
-            return sum(runtime_list) / len(runtime_list)
+            return 0 if not runtime_list else sum(runtime_list) / len(runtime_list)
 
         return self.__cal_block_run_stats(block_runs, __stats_func)
 
@@ -212,7 +208,7 @@ class MonitorStats:
         stats_func: Callable
     ) -> Dict:
         block_runs_by_uuid = group_by(lambda b: b.block_uuid, block_runs)
-        block_run_stats = dict()
+        block_run_stats = {}
         for uuid, sub_block_runs in block_runs_by_uuid.items():
             sub_block_runs_by_date = group_by(
                 lambda b: b.created_at.strftime('%Y-%m-%d'),

@@ -103,12 +103,8 @@ class ApiSchedulerHandler(BaseHandler):
 def make_app():
     shell_command = SHELL_COMMAND
     if shell_command is None:
-        shell_command = 'bash'
-        if os.name == 'nt':
-            shell_command = 'cmd'
-    term_klass = MageTermManager
-    if USE_UNIQUE_TERMINAL:
-        term_klass = MageUniqueTermManager
+        shell_command = 'cmd' if os.name == 'nt' else 'bash'
+    term_klass = MageUniqueTermManager if USE_UNIQUE_TERMINAL else MageTermManager
     term_manager = term_klass(shell_command=[shell_command])
 
     routes = [
@@ -298,7 +294,6 @@ def start_server(
     cluster_type: ClusterType = None,
     project_uuid: str = None,
 ):
-    host = host if host else None
     port = port if port else DATA_PREP_SERVER_PORT
     project = project if project else None
 
@@ -351,6 +346,7 @@ def start_server(
                 options.logging = SERVER_VERBOSITY
             enable_pretty_logging()
 
+            host = host if host else None
             # Start web server
             asyncio.run(
                 main(

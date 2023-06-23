@@ -10,10 +10,10 @@ import urllib.parse
 class FileContentResource(GenericResource):
     @classmethod
     @safe_db_query
-    def member(self, pk, user, **kwargs):
+    def member(cls, pk, user, **kwargs):
         file_path = urllib.parse.unquote(pk)
         file = File.from_path(file_path, get_repo_path())
-        return self(file, user, **kwargs)
+        return cls(file, user, **kwargs)
 
     def update(self, payload, **kwargs):
         error = ApiError.RESOURCE_INVALID.copy()

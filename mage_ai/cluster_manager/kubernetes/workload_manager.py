@@ -61,7 +61,7 @@ class WorkloadManager:
                 labels = service.metadata.labels
                 if not labels.get('dev-instance'):
                     continue
-                conditions = service.status.conditions or list()
+                conditions = service.status.conditions or []
                 services_list.append(dict(
                     name=labels.get('app'),
                     status='RUNNING' if len(conditions) == 0 else conditions[0].status,
@@ -79,11 +79,10 @@ class WorkloadManager:
         project_uuid: str = None,
         **kwargs,
     ):
-        container_config_yaml = kwargs.get('container_config')
-        container_config = dict()
-        if container_config_yaml:
+        if container_config_yaml := kwargs.get('container_config'):
             container_config = yaml.full_load(container_config_yaml)
-
+        else:
+            container_config = {}
         service_account_name = kwargs.get(
             'service_account_name',
             os.getenv(KUBE_SERVICE_ACCOUNT_NAME),
@@ -163,7 +162,7 @@ class WorkloadManager:
                 }
             )
 
-        stateful_set_template_spec = dict()
+        stateful_set_template_spec = {}
         if service_account_name:
             stateful_set_template_spec['serviceAccountName'] = service_account_name
 
@@ -223,7 +222,7 @@ class WorkloadManager:
         annotations = {}
         if os.getenv(KUBE_SERVICE_GCP_BACKEND_CONFIG):
             annotations[GCP_BACKEND_CONFIG_ANNOTATION] = \
-                os.getenv(KUBE_SERVICE_GCP_BACKEND_CONFIG)
+                    os.getenv(KUBE_SERVICE_GCP_BACKEND_CONFIG)
 
         service = {
             'apiVersion': 'v1',
@@ -280,8 +279,7 @@ class WorkloadManager:
                 'value': project_uuid,
             })
 
-        connection_url_secrets_name = os.getenv(CONNECTION_URL_SECRETS_NAME)
-        if connection_url_secrets_name:
+        if connection_url_secrets_name := os.getenv(CONNECTION_URL_SECRETS_NAME):
             env_vars.append(
                 {
                     'name': DATABASE_CONNECTION_URL_ENV_VAR,
@@ -304,9 +302,7 @@ class WorkloadManager:
                     'value': str(os.getenv(var)),
                 })
 
-        # For connecting to CloudSQL PostgreSQL database.
-        db_secrets_name = os.getenv(DB_SECRETS_NAME)
-        if db_secrets_name:
+        if db_secrets_name := os.getenv(DB_SECRETS_NAME):
             env_vars.extend([
                 {
                     'name': DB_USER,

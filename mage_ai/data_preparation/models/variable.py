@@ -58,10 +58,7 @@ class Variable:
         variable_type: VariableType = None
     ) -> None:
         self.uuid = uuid
-        if storage is None:
-            self.storage = LocalStorage()
-        else:
-            self.storage = storage
+        self.storage = LocalStorage() if storage is None else storage
         # if not self.storage.path_exists(pipeline_path):
         #     raise Exception(f'Pipeline path {pipeline_path} does not exist.')
         self.pipeline_path = pipeline_path
@@ -85,7 +82,7 @@ class Variable:
         return os.path.join(self.variable_dir_path, f'{self.uuid}')
 
     @classmethod
-    def dir_path(self, pipeline_path, block_uuid):
+    def dir_path(cls, pipeline_path, block_uuid):
         return os.path.join(pipeline_path, VARIABLE_DIR, clean_name(block_uuid))
 
     def check_variable_type(self, spark=None):
@@ -376,7 +373,6 @@ class Variable:
             except Exception as e:
                 if raise_exception:
                     raise e
-                pass
         if not read_sample_success:
             try:
                 df = self.storage.read_parquet(file_path, engine='pyarrow')
@@ -537,13 +533,14 @@ class Variable:
         4. suggestions.json
         """
         if not self.storage.path_exists(self.variable_path):
-            return dict()
-        result = dict()
-        for k in DATAFRAME_ANALYSIS_KEYS:
-            if dataframe_analysis_keys is not None and k not in dataframe_analysis_keys:
-                continue
-            result[k] = self.storage.read_json_file(os.path.join(self.variable_path, f'{k}.json'))
-        return result
+            return {}
+        return {
+            k: self.storage.read_json_file(
+                os.path.join(self.variable_path, f'{k}.json')
+            )
+            for k in DATAFRAME_ANALYSIS_KEYS
+            if dataframe_analysis_keys is None or k in dataframe_analysis_keys
+        }
 
     async def __read_dataframe_analysis_async(
         self,
@@ -557,8 +554,8 @@ class Variable:
         4. suggestions.json
         """
         if not self.storage.path_exists(self.variable_path):
-            return dict()
-        result = dict()
+            return {}
+        result = {}
         for k in DATAFRAME_ANALYSIS_KEYS:
             if dataframe_analysis_keys is not None and k not in dataframe_analysis_keys:
                 continue

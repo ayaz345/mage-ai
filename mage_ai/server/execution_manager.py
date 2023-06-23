@@ -28,10 +28,10 @@ def check_pipeline_process_status(
     pipeline: Pipeline,
     publish_message: Callable[..., None],
 ) -> None:
-    current_process = pipeline_execution.current_pipeline_process
-    is_alive = False
-    if current_process:
+    if current_process := pipeline_execution.current_pipeline_process:
         is_alive = current_process.is_alive()
+    else:
+        is_alive = False
     status = 'running' if is_alive else 'not running'
 
     publish_message(

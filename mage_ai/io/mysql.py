@@ -50,10 +50,7 @@ class MySQL(BaseSQL):
         table_name: str,
         unique_constraints: List[str] = [],
     ) -> str:
-        query = []
-        for cname in dtypes:
-            query.append(f'`{clean_name(cname)}` {dtypes[cname]}')
-
+        query = [f'`{clean_name(cname)}` {dtypes[cname]}' for cname in dtypes]
         return f'CREATE TABLE {table_name} (' + ','.join(query) + ');'
 
     def open(self) -> None:
@@ -80,11 +77,8 @@ class MySQL(BaseSQL):
         buffer: Union[IO, None] = None,
         **kwargs,
     ) -> None:
-        values_placeholder = ', '.join(["%s" for i in range(len(df.columns))])
-        values = []
-        for i, row in df.iterrows():
-            values.append(tuple(row))
-
+        values_placeholder = ', '.join(["%s" for _ in range(len(df.columns))])
+        values = [tuple(row) for i, row in df.iterrows()]
         sql = f'INSERT INTO {full_table_name} VALUES ({values_placeholder})'
         cursor.executemany(sql, values)
 

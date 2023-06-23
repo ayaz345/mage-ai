@@ -18,9 +18,9 @@ class GitBranchPresenter(BasePresenter):
     ]
 
     def present(self, **kwargs):
-        if 'with_logs' == kwargs['format']:
+        if kwargs['format'] == 'with_logs':
             return merge_dict(self.model, dict(logs=self.resource.logs(commits=12)))
-        elif 'with_remotes' == kwargs['format']:
+        elif kwargs['format'] == 'with_remotes':
             return merge_dict(self.model, dict(remotes=self.resource.remotes(limit=100)))
 
         return self.model

@@ -21,4 +21,3 @@ def get_messages(callback=None):
         except Exception as e:
             if str(e):
                 logger.error(f'[{now}] Error: {e}', )
-            pass

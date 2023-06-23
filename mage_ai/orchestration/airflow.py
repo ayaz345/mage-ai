@@ -54,7 +54,7 @@ def create_dag(
 
         return operators
 
-    if len(tasks) >= 1:
+    if tasks:
         dag_id = f'mage_pipeline_{pipeline_uuid}'
         dag = dag_class(
             f'mage_pipeline_{pipeline_uuid}',

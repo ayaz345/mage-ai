@@ -26,21 +26,17 @@ async def build_project(repo_config=None, **kwargs):
 class ProjectResource(GenericResource):
     @classmethod
     @safe_db_query
-    async def collection(self, query, meta, user, **kwargs):
-        project = await self.member(None, user, **kwargs)
+    async def collection(cls, query, meta, user, **kwargs):
+        project = await cls.member(None, user, **kwargs)
         collection = [project.model]
 
-        return self.build_result_set(
-            collection,
-            user,
-            **kwargs,
-        )
+        return cls.build_result_set(collection, user, **kwargs)
 
     @classmethod
     @safe_db_query
-    async def member(self, _, user, **kwargs):
+    async def member(cls, _, user, **kwargs):
         model = await build_project()
-        return self(model, user, **kwargs)
+        return cls(model, user, **kwargs)
 
     @safe_db_query
     async def update(self, payload, **kwargs):

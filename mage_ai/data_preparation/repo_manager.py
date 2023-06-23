@@ -16,12 +16,7 @@ from mage_ai.data_preparation.shared.constants import (
 from mage_ai.data_preparation.templates.utils import copy_template_directory
 from mage_ai.shared.environments import is_test
 
-if is_test():
-    DEFAULT_MAGE_DATA_DIR = './'
-else:
-    DEFAULT_MAGE_DATA_DIR = '~/.mage_data'
-
-
+DEFAULT_MAGE_DATA_DIR = './' if is_test() else '~/.mage_data'
 class ProjectType(str, Enum):
     MAIN = 'main'
     SUB = 'sub'
@@ -34,18 +29,17 @@ class RepoConfig:
         self.repo_path = repo_path or get_repo_path()
         self.repo_name = os.path.basename(self.repo_path)
         try:
-            if not config_dict:
-                if os.path.exists(self.metadata_path):
-                    with open(self.metadata_path) as f:
-                        config_file = Template(f.read()).render(
-                            **get_template_vars()
-                        )
-                        repo_config = yaml.full_load(config_file) or {}
-                else:
-                    repo_config = dict()
-            else:
+            if config_dict:
                 repo_config = config_dict
 
+            elif os.path.exists(self.metadata_path):
+                with open(self.metadata_path) as f:
+                    config_file = Template(f.read()).render(
+                        **get_template_vars()
+                    )
+                    repo_config = yaml.full_load(config_file) or {}
+            else:
+                repo_config = {}
             # Priority:
             # 1. 'variables_dir' from config_dict
             # 1. os.getenv(MAGE_DATA_DIR_ENV_VAR)
@@ -78,15 +72,15 @@ class RepoConfig:
 
             # Executor configs
             self.azure_container_instance_config = \
-                repo_config.get('azure_container_instance_config')
+                    repo_config.get('azure_container_instance_config')
             self.ecs_config = repo_config.get('ecs_config')
             self.emr_config = repo_config.get('emr_config')
             self.gcp_cloud_run_config = repo_config.get('gcp_cloud_run_config')
             self.k8s_executor_config = repo_config.get('k8s_executor_config')
             self.spark_config = repo_config.get('spark_config')
 
-            self.notification_config = repo_config.get('notification_config', dict())
-            self.queue_config = repo_config.get('queue_config', dict())
+            self.notification_config = repo_config.get('notification_config', {})
+            self.queue_config = repo_config.get('queue_config', {})
             self.project_uuid = repo_config.get('project_uuid')
             self.help_improve_mage = repo_config.get('help_improve_mage')
             self.retry_config = repo_config.get('retry_config')
@@ -94,23 +88,21 @@ class RepoConfig:
             self.s3_bucket = None
             self.s3_path_prefix = None
             if self.remote_variables_dir is not None and \
-                    self.remote_variables_dir.startswith('s3://'):
+                        self.remote_variables_dir.startswith('s3://'):
                 path_parts = self.remote_variables_dir.replace('s3://', '').split('/')
                 self.s3_bucket = path_parts.pop(0)
                 self.s3_path_prefix = '/'.join(path_parts)
 
-            self.logging_config = repo_config.get('logging_config', dict())
+            self.logging_config = repo_config.get('logging_config', {})
 
             self.variables_retention_period = repo_config.get('variables_retention_period')
         except Exception:
             traceback.print_exc()
-            pass
 
     @classmethod
-    def from_dict(self, config_dict: Dict) -> 'RepoConfig':
+    def from_dict(cls, config_dict: Dict) -> 'RepoConfig':
         repo_path = config_dict.get('repo_path')
-        repo_config = RepoConfig(repo_path=repo_path, config_dict=config_dict)
-        return repo_config
+        return RepoConfig(repo_path=repo_path, config_dict=config_dict)
 
     @property
     def metadata_path(self) -> str:
@@ -166,7 +158,7 @@ def init_repo(
     if os.path.exists(repo_path):
         raise FileExistsError(f'Repository {repo_path} already exists')
 
-    new_config = dict()
+    new_config = {}
     if project_type == ProjectType.MAIN:
         copy_template_directory('main', repo_path)
         new_config.update(

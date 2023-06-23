@@ -31,9 +31,7 @@ class Model:
 
         if id is None:
             dirs = Model.gen_integer_dir_list(self.path)
-            max_id = 0
-            if len(dirs) > 0:
-                max_id = sorted(dirs, reverse=True)[0]
+            max_id = sorted(dirs, reverse=True)[0] if len(dirs) > 0 else 0
             self.id = max_id + 1
         else:
             self.id = id

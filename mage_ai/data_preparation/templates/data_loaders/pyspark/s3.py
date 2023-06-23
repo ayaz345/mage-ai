@@ -12,13 +12,12 @@ def load_from_s3_bucket(**kwargs):
     """
     s3_bucket = 'your_s3_bucket_name'
     s3_path_prefix = 'your_s3_path_prefix'
-    df = (kwargs['spark'].read
-        .format('csv')
+    return (
+        kwargs['spark']
+        .read.format('csv')
         .option('header', 'true')
         .option('inferSchema', 'true')
         .option('delimiter', ',')
         .load(f's3://{s3_bucket}/{s3_path_prefix}/*')
     )
-
-    return df
 {% endblock %}

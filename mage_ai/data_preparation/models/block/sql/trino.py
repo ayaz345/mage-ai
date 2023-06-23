@@ -44,17 +44,20 @@ def create_upstream_block_tables(
         if query and upstream_block.uuid not in mapping:
             continue
 
-        should_cache = should_cache_data_from_upstream(block, upstream_block, [
-            'data_provider',
-        ], [
-            'trino',
-            ConfigKey.TRINO_CATALOG,
-            ConfigKey.TRINO_HOST,
-            ConfigKey.TRINO_PORT,
-            ConfigKey.TRINO_SCHEMA,
-        ])
-
-        if should_cache:
+        if should_cache := should_cache_data_from_upstream(
+            block,
+            upstream_block,
+            [
+                'data_provider',
+            ],
+            [
+                'trino',
+                ConfigKey.TRINO_CATALOG,
+                ConfigKey.TRINO_HOST,
+                ConfigKey.TRINO_PORT,
+                ConfigKey.TRINO_SCHEMA,
+            ],
+        ):
             if BlockType.DBT == upstream_block.type \
                     and not cache_upstream_dbt_models:
                 continue

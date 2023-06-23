@@ -116,15 +116,8 @@ def gen_table_creation_query(
     Returns:
         str: Table creation query for this table.
     """
-    query = []
-    for cname in dtypes:
-        query.append(f'"{clean_name(cname)}" {dtypes[cname]}')
-
-    if schema_name:
-        full_table_name = f'{schema_name}.{table_name}'
-    else:
-        full_table_name = table_name
-
+    query = [f'"{clean_name(cname)}" {dtypes[cname]}' for cname in dtypes]
+    full_table_name = f'{schema_name}.{table_name}' if schema_name else table_name
     if unique_constraints:
         unique_constraints_clean = [clean_name(col) for col in unique_constraints]
         unique_constraints_escaped = [f'"{col}"'

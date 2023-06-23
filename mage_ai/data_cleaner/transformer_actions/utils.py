@@ -33,16 +33,16 @@ def build_action_variables(
     if columns is None:
         columns = df.columns
     ctypes = infer_column_types(df, column_types=ctypes)
-    variable_set = {}
-    for column_name in columns:
-        variable_set[column_name] = {
+    return {
+        column_name: {
             'feature': {
                 'column_type': ctypes[column_name],
                 'uuid': column_name,
             },
             'type': 'feature',
         }
-    return variable_set
+        for column_name in columns
+    }
 
 
 def build_transformer_action(

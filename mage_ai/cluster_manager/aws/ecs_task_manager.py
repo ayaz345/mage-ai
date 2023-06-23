@@ -134,7 +134,7 @@ class EcsTaskManager:
         return network_interface.get('value', None)
 
     def __get_network_interfaces(self, tasks: List, ec2_client) -> Dict:
-        task_mapping = dict()
+        task_mapping = {}
         for task in tasks:
             nii = self.__get_network_interface_id(task)
             if nii is not None:

@@ -46,25 +46,24 @@ class User(BaseModel):
                 key=key,
                 value=value,
             ))
-        else:
-            existing_email = User.query.filter(
-                User.email == value
-            ).one_or_none()
-            if self.email != value and existing_email is not None:
-                raise ValidationError(
-                    'Email address is already in use. Please choose a different one.',
-                    metadata=dict(
-                        key=key,
-                        value=value,
-                    )
-                )
-
-            regex = re.compile(r"([-!#-'*+/-9=?A-Z^-~]+(\.[-!#-'*+/-9=?A-Z^-~]+)*|\"([]!#-[^-~ \t]|(\\[\t -~]))+\")@([-!#-'*+/-9=?A-Z^-~]+(\.[-!#-'*+/-9=?A-Z^-~]+)*|\[[\t -Z^-~]*])")  # noqa: E501
-            if not re.fullmatch(regex, value):
-                raise ValidationError('Email address is invalid.', metadata=dict(
+        existing_email = User.query.filter(
+            User.email == value
+        ).one_or_none()
+        if self.email != value and existing_email is not None:
+            raise ValidationError(
+                'Email address is already in use. Please choose a different one.',
+                metadata=dict(
                     key=key,
                     value=value,
-                ))
+                )
+            )
+
+        regex = re.compile(r"([-!#-'*+/-9=?A-Z^-~]+(\.[-!#-'*+/-9=?A-Z^-~]+)*|\"([]!#-[^-~ \t]|(\\[\t -~]))+\")@([-!#-'*+/-9=?A-Z^-~]+(\.[-!#-'*+/-9=?A-Z^-~]+)*|\[[\t -Z^-~]*])")  # noqa: E501
+        if not re.fullmatch(regex, value):
+            raise ValidationError('Email address is invalid.', metadata=dict(
+                key=key,
+                value=value,
+            ))
 
         return value
 
@@ -112,20 +111,17 @@ class User(BaseModel):
         if self.roles_new:
             access = self.project_access
             return access & \
-                (Permission.Access.OWNER | Permission.Access.ADMIN) == Permission.Access.ADMIN
-        if not self.owner and self.roles:
-            return self.roles & 1 != 0
-
-        return False
+                    (Permission.Access.OWNER | Permission.Access.ADMIN) == Permission.Access.ADMIN
+        return self.roles & 1 != 0 if not self.owner and self.roles else False
 
     @property
     def git_settings(self) -> Union[Dict, None]:
-        preferences = self.preferences or dict()
+        preferences = self.preferences or {}
         return preferences.get(get_repo_path(), {}).get('git_settings')
 
     @classmethod
     @safe_db_query
-    def batch_update_user_roles(self):
+    def batch_update_user_roles(cls):
         for user in User.query.all():
             roles_new = []
             if user._owner:
@@ -154,28 +150,23 @@ class Role(BaseModel):
 
     @classmethod
     @safe_db_query
-    def create_default_roles(
-        self,
-        entity: 'Permission.Entity' = None,
-        entity_id: str = None,
-        prefix: str = None,
-    ):
+    def create_default_roles(cls, entity: 'Permission.Entity' = None, entity_id: str = None, prefix: str = None):
         if entity is None:
             entity = Permission.Entity.GLOBAL
         Permission.create_default_permissions(entity=entity, entity_id=entity_id)
         mapping = {
-            self.DefaultRole.OWNER: Permission.Access.OWNER,
-            self.DefaultRole.ADMIN: Permission.Access.ADMIN,
-            self.DefaultRole.EDITOR: Permission.Access.EDITOR,
-            self.DefaultRole.VIEWER: Permission.Access.VIEWER,
+            cls.DefaultRole.OWNER: Permission.Access.OWNER,
+            cls.DefaultRole.ADMIN: Permission.Access.ADMIN,
+            cls.DefaultRole.EDITOR: Permission.Access.EDITOR,
+            cls.DefaultRole.VIEWER: Permission.Access.VIEWER,
         }
         for name, access in mapping.items():
             role_name = name
             if prefix is not None:
                 role_name = f'{prefix}_{name}'
-            role = self.query.filter(self.name == role_name).first()
+            role = cls.query.filter(cls.name == role_name).first()
             if not role:
-                self.create(
+                cls.create(
                     name=role_name,
                     permissions=[
                         Permission.query.filter(
@@ -190,7 +181,7 @@ class Role(BaseModel):
 
     @classmethod
     @safe_db_query
-    def get_role(self, name) -> 'Role':
+    def get_role(cls, name) -> 'Role':
         return Role.query.filter(Role.name == name).first()
 
     def get_access(
@@ -203,23 +194,22 @@ class Role(BaseModel):
             return 0
         elif entity == Permission.Entity.ANY:
             permissions.extend(self.permissions)
-        else:
-            entity_permissions = list(filter(
-                lambda perm: perm.entity == entity and
-                (entity_id is None or perm.entity_id == entity_id),
+        elif entity_permissions := list(
+            filter(
+                lambda perm: perm.entity == entity
+                and (entity_id is None or perm.entity_id == entity_id),
                 self.permissions,
-            ))
-            if entity_permissions:
-                permissions.extend(entity_permissions)
+            )
+        ):
+            permissions.extend(entity_permissions)
 
         access = 0
-        if permissions:
-            for permission in permissions:
-                access = access | permission.access
-            return access
-        else:
+        if not permissions:
             # TODO: Handle permissions with different entity types better.
             return self.get_parent_access(entity)
+        for permission in permissions:
+            access = access | permission.access
+        return access
 
     def get_parent_access(self, entity) -> int:
         '''
@@ -280,21 +270,16 @@ class Permission(BaseModel):
 
     @classmethod
     @safe_db_query
-    def create_default_permissions(
-        self,
-        entity: 'Permission.Entity' = None,
-        entity_id: str = None,
-    ) -> List['Permission']:
+    def create_default_permissions(cls, entity: 'Permission.Entity' = None, entity_id: str = None) -> List['Permission']:
         if entity is None:
             entity = Permission.Entity.GLOBAL
-        permissions = self.query.filter(
-            self.entity == entity,
-            self.entity_id == entity_id,
+        permissions = cls.query.filter(
+            cls.entity == entity, cls.entity_id == entity_id
         ).all()
         if len(permissions) == 0:
             for access in [a.value for a in Permission.Access]:
                 permissions.append(
-                    self.create(
+                    cls.create(
                         entity=entity,
                         entity_id=entity_id,
                         access=access,
@@ -329,10 +314,8 @@ class Oauth2Application(BaseModel):
 
     @classmethod
     @safe_db_query
-    def query_client(self, api_key: str):
-        return self.query.filter(
-            Oauth2Application.client_id == api_key,
-        ).first()
+    def query_client(cls, api_key: str):
+        return cls.query.filter(Oauth2Application.client_id == api_key).first()
 
 
 class Oauth2AccessToken(BaseModel):

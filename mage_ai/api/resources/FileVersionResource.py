@@ -8,16 +8,12 @@ from mage_ai.orchestration.db import safe_db_query
 class FileVersionResource(GenericResource):
     @classmethod
     @safe_db_query
-    def collection(self, query, meta, user, **kwargs):
+    def collection(cls, query, meta, user, **kwargs):
         parent_model = kwargs.get('parent_model')
 
         if isinstance(parent_model, Block):
             pass
         elif isinstance(parent_model, File):
-            return self.build_result_set(
-                parent_model.file_versions(),
-                user,
-                **kwargs,
-            )
+            return cls.build_result_set(parent_model.file_versions(), user, **kwargs)
         else:
             raise ApiError(ApiError.RESOURCE_INVALID.copy())

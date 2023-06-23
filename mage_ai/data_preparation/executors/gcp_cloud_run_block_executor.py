@@ -9,7 +9,7 @@ from mage_ai.shared.hash import merge_dict
 class GcpCloudRunBlockExecutor(BlockExecutor):
     def __init__(self, pipeline, block_uuid: str, execution_partition: str = None):
         super().__init__(pipeline, block_uuid, execution_partition=execution_partition)
-        self.executor_config = self.pipeline.repo_config.gcp_cloud_run_config or dict()
+        self.executor_config = self.pipeline.repo_config.gcp_cloud_run_config or {}
         if os.getenv('GCP_REGION'):
             self.executor_config['region'] = os.getenv('GCP_REGION')
         if os.getenv('GCP_PROJECT_ID'):

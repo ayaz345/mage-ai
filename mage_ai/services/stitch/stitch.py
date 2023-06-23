@@ -71,13 +71,9 @@ class StitchClient(HttpClient):
         extraction_completion_time = None
         while True:
             extractions = self.list_extractions(stitch_client_id)['data']
-            extractions = [e for e in extractions if e['job_name'] == job_name]
-            if len(extractions) == 0:
-                print(
-                    f'Polling Stitch extraction status for source {source_id}. '
-                    'Current status: running.'
-                )
-            else:
+            if extractions := [
+                e for e in extractions if e['job_name'] == job_name
+            ]:
                 extraction = extractions[0]
 
                 if extraction['discovery_exit_status'] is None:
@@ -95,6 +91,11 @@ class StitchClient(HttpClient):
                         f'Extraction for source {source_id} failed with '
                         f'message: \"{error_message}\".'
                     )
+            else:
+                print(
+                    f'Polling Stitch extraction status for source {source_id}. '
+                    'Current status: running.'
+                )
             if (
                 poll_timeout
                 and datetime.now()
@@ -126,7 +127,7 @@ class StitchClient(HttpClient):
                 for load in loads:
                     if load['error_state'] is not None:
                         error_message = \
-                            load['error_state']['notification_data']['warehouse_message']
+                                load['error_state']['notification_data']['warehouse_message']
                         raise Exception(
                             f"Failed to load data for stream {load['stream_name']} with "
                             f"message: \"{error_message}\"."
@@ -145,8 +146,8 @@ class StitchClient(HttpClient):
                 print(f'Finish loading data for all streams: {succeeded_streams}.')
                 break
             elif autocomplete_after_seconds and \
-                    datetime.now().timestamp() - autocomplete_after_seconds >= \
-                    poll_start.timestamp():
+                        datetime.now().timestamp() - autocomplete_after_seconds >= \
+                        poll_start.timestamp():
                 print(f'Automatically setting job as complete after {autocomplete_after_seconds} '
                       'seconds.')
                 break
@@ -180,7 +181,9 @@ class StitchClient(HttpClient):
         autocomplete_after_seconds: int = None,
         disable_polling: bool = False,
     ):
-        response = self.make_request(f'/sources/{source_id}/sync', method='POST', payload=dict())
+        response = self.make_request(
+            f'/sources/{source_id}/sync', method='POST', payload={}
+        )
         if 'error' in response:
             raise Exception(response['error']['message'])
         job_name = response['job_name']

@@ -113,10 +113,7 @@ class Trino(BaseSQL):
         table_name: str,
         unique_constraints: List[str] = [],
     ):
-        query = []
-        for cname in dtypes:
-            query.append(f'"{clean_name(cname)}" {dtypes[cname]}')
-
+        query = [f'"{clean_name(cname)}" {dtypes[cname]}' for cname in dtypes]
         full_table_name = '.'.join(list(filter(lambda x: x, [
             schema_name,
             table_name,

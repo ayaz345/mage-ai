@@ -85,10 +85,7 @@ class MSSQL(BaseSQL):
         table_name: str,
         query_string: str
     ) -> str:
-        return 'SELECT * INTO {}\nFROM ({}) AS prev'.format(
-            table_name,
-            query_string,
-        )
+        return f'SELECT * INTO {table_name}\nFROM ({query_string}) AS prev'
 
     def table_exists(self, schema_name: str, table_name: str) -> bool:
         with self.conn.cursor() as cur:
@@ -108,8 +105,7 @@ class MSSQL(BaseSQL):
         buffer: Union[IO, None] = None,
         **kwargs,
     ) -> None:
-        values_placeholder = ', '.join(["?" for i in range(len(df.columns))])
-        values = []
+        values_placeholder = ', '.join(["?" for _ in range(len(df.columns))])
         df_ = df.copy()
         columns = df_.columns
         for col in columns:
@@ -122,9 +118,7 @@ class MSSQL(BaseSQL):
                 PandasTypes.COMPLEX,
             ):
                 df_[col] = df_[col].astype('string')
-        for _, row in df_.iterrows():
-            values.append(tuple(row))
-
+        values = [tuple(row) for _, row in df_.iterrows()]
         sql = f'INSERT INTO {full_table_name} VALUES ({values_placeholder})'
         cursor.executemany(sql, values)
 

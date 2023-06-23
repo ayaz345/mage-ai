@@ -31,13 +31,7 @@ import pandas as pd
 
 class Widget(Block):
     @classmethod
-    def create(
-        self,
-        name,
-        block_type,
-        repo_path,
-        **kwargs,
-    ):
+    def create(cls, name, block_type, repo_path, **kwargs):
         return super().create(
             name,
             block_type,
@@ -69,11 +63,10 @@ class Widget(Block):
         super().delete(widget=True, commit=commit)
 
     def get_variables_from_code_execution(self, results):
-        data = {}
-        for var_name_orig, var_name in self.output_variable_names:
-            data[var_name_orig] = results.get(var_name)
-
-        return data
+        return {
+            var_name_orig: results.get(var_name)
+            for var_name_orig, var_name in self.output_variable_names
+        }
 
     def post_process_variables(
         self,
@@ -83,11 +76,7 @@ class Widget(Block):
         upstream_block_uuids=[],
     ):
         data = variables.copy()
-        dfs = []
-        for key in upstream_block_uuids:
-            if key in results.keys():
-                dfs.append(results[key])
-
+        dfs = [results[key] for key in upstream_block_uuids if key in results.keys()]
         should_use_no_code = self.group_by_columns or self.metrics
 
         if ChartType.BAR_CHART == self.chart_type:

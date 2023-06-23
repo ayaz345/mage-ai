@@ -125,7 +125,7 @@ def list_clusters():
     config = Config(region_name=region_name)
     emr_client = boto3.client('emr', config=config)
 
-    clusters = emr_client.list_clusters(
+    return emr_client.list_clusters(
         ClusterStates=[
             'BOOTSTRAPPING',
             'RUNNING',
@@ -133,7 +133,6 @@ def list_clusters():
             'WAITING',
         ],
     )
-    return clusters
 
 
 def submit_spark_job(
@@ -199,7 +198,7 @@ def submit_spark_job(
     #     print(response)
     #     print('\n')
 
-    if len(valid_cluster_ids) == 0:
+    if not valid_cluster_ids:
         cluster_id = create_a_new_cluster(
             cluster_name,
             steps,
@@ -313,12 +312,11 @@ def __status_poller(intro, done_status, func):
             status = func()
             sleep_time = base_sleep_time
         except ClientError as err:
-            if 'ListSteps' in str(err) and 'Rate exceeded' in str(err):
-                status = prev_status
-                sleep_time = base_sleep_time + (30 * tries)
-            else:
+            if 'ListSteps' not in str(err) or 'Rate exceeded' not in str(err):
                 raise err
 
+            status = prev_status
+            sleep_time = base_sleep_time + (30 * tries)
         if prev_status == status:
             print('.', end='')
         else:

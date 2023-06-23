@@ -65,11 +65,15 @@ def execute_r_code(
                                     DATAFRAME_CSV_FILE,
                                 ))]
 
-    if len(output_variable_objects) > 0:
-        df = pd.read_csv(os.path.join(output_variable_objects[0].variable_path, DATAFRAME_CSV_FILE))
-    else:
-        df = None
-    return df
+    return (
+        pd.read_csv(
+            os.path.join(
+                output_variable_objects[0].variable_path, DATAFRAME_CSV_FILE
+            )
+        )
+        if output_variable_objects
+        else None
+    )
 
 
 def __convert_inputs_to_csvs(input_variable_objects):
@@ -83,10 +87,7 @@ def __render_global_vars(global_vars: Dict = None):
         return ''
 
     def format_value(val):
-        if type(val) is int or type(val) is float:
-            return val
-        else:
-            return f"'{val}'"
+        return val if type(val) is int or type(val) is float else f"'{val}'"
 
     var_list = [f'{k}={format_value(v)}' for k, v in global_vars.items()]
     val_list_str = ', '.join(var_list)

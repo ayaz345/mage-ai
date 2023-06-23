@@ -22,15 +22,13 @@ def pull_request_to_dict(pr) -> Dict:
 
 class PullRequestResource(GenericResource):
     @classmethod
-    def collection(self, query, meta, user, **kwargs):
+    def collection(cls, query, meta, user, **kwargs):
         arr = []
 
-        repository = query.get('repository', None)
-        if repository:
+        if repository := query.get('repository', None):
             repository = repository[0]
 
-            access_token = api.get_access_token_for_user(user)
-            if access_token:
+            if access_token := api.get_access_token_for_user(user):
                 auth = Auth.Token(access_token.token)
                 g = Github(auth=auth)
                 repo = g.get_repo(repository)
@@ -40,13 +38,11 @@ class PullRequestResource(GenericResource):
                     state='open',
                 ).get_page(0)
 
-                for pr in pulls:
-                    arr.append(pull_request_to_dict(pr))
-
-        return self.build_result_set(arr, user, **kwargs)
+                arr.extend(pull_request_to_dict(pr) for pr in pulls)
+        return cls.build_result_set(arr, user, **kwargs)
 
     @classmethod
-    def create(self, payload, user, **kwargs):
+    def create(cls, payload, user, **kwargs):
         error = ApiError.RESOURCE_INVALID
 
         for key in [
@@ -84,4 +80,4 @@ class PullRequestResource(GenericResource):
             title=payload.get('title'),
         )
 
-        return self(pull_request_to_dict(pr), user, **kwargs)
+        return cls(pull_request_to_dict(pr), user, **kwargs)

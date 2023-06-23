@@ -64,7 +64,7 @@ def calculate_metric_for_series(series, aggregation):
     elif AggregationFunction.MAX == aggregation:
         value = max(series)
     elif AggregationFunction.MEDIAN == aggregation:
-        value = sorted(series)[int(len(series) / 2)]
+        value = sorted(series)[len(series) // 2]
     elif AggregationFunction.MIN == aggregation:
         value = min(series)
     elif AggregationFunction.MODE == aggregation:
@@ -93,18 +93,16 @@ def calculate_metrics_for_group(metrics, group):
 
 
 def build_x_y(df, group_by_columns, metrics):
-    data = {}
     groups = df.groupby(group_by_columns)
-    data[VARIABLE_NAME_X] = list(groups.groups.keys())
-
+    data = {VARIABLE_NAME_X: list(groups.groups.keys())}
     metrics_per_group = groups.apply(
         lambda group: calculate_metrics_for_group(metrics, group),
     ).values
 
-    y_values = []
-    for idx, metric in enumerate(metrics):
-        y_values.append([g[build_metric_name(metric)] for g in metrics_per_group])
-
+    y_values = [
+        [g[build_metric_name(metric)] for g in metrics_per_group]
+        for metric in metrics
+    ]
     data[VARIABLE_NAME_Y] = y_values
 
     return data

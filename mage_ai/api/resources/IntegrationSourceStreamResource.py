@@ -6,5 +6,5 @@ from mage_ai.orchestration.db import safe_db_query
 class IntegrationSourceStreamResource(GenericResource):
     @classmethod
     @safe_db_query
-    def member(self, pk, user, **kwargs):
-        return self(IntegrationPipeline.get(pk), user, **kwargs)
+    def member(cls, pk, user, **kwargs):
+        return cls(IntegrationPipeline.get(pk), user, **kwargs)

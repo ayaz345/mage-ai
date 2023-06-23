@@ -9,7 +9,7 @@ class BlockRunResource(DatabaseResource):
 
     @classmethod
     @safe_db_query
-    def build_result_set(self, arr, user, **kwargs):
+    def build_result_set(cls, arr, user, **kwargs):
         block_runs = []
         for tup in arr:
             (
@@ -45,10 +45,8 @@ class BlockRunResource(DatabaseResource):
 
     @classmethod
     @safe_db_query
-    def collection(self, query_arg, meta, user, **kwargs):
-        pipeline_run = kwargs.get('parent_model')
-
-        if pipeline_run:
+    def collection(cls, query_arg, meta, user, **kwargs):
+        if pipeline_run := kwargs.get('parent_model'):
             pipeline_run_id = pipeline_run.id
 
             return BlockRun.query.filter(BlockRun.pipeline_run_id == pipeline_run_id)

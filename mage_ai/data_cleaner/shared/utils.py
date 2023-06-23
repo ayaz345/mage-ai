@@ -30,7 +30,7 @@ def clean_series(series, column_type, dropna=True):
         return series_cleaned
 
     dtype = type(series_cleaned.dropna().iloc[0])
-    if column_type == ColumnType.NUMBER or column_type == ColumnType.NUMBER_WITH_DECIMALS:
+    if column_type in [ColumnType.NUMBER, ColumnType.NUMBER_WITH_DECIMALS]:
         is_percent = False
         if dtype is str:
             series_cleaned = series_cleaned.str.replace(',', '')
@@ -82,19 +82,16 @@ def is_spark_dataframe(df):
 
 
 def __parse_element(element: str) -> Any:
-    if element == 'nan' or element == 'np.nan':
+    if element in {'nan', 'np.nan'}:
         return np.nan
-    else:
-        try:
-            return __resolve_type(eval(element))
-        except Exception:
-            return None
+    try:
+        return __resolve_type(eval(element))
+    except Exception:
+        return None
 
 
 def __resolve_type(element: Any) -> Any:
-    if isinstance(element, dict):
-        return FrozenDict(element)
-    return element
+    return FrozenDict(element) if isinstance(element, dict) else element
 
 
 def parse_list(list_literal: Union[str, List[Any]]) -> FrozenList:

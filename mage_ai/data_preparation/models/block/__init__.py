@@ -77,7 +77,7 @@ async def run_blocks(
     update_status: bool = True,
 ) -> None:
     tries_by_block_uuid = {}
-    tasks = dict()
+    tasks = {}
     blocks = Queue()
 
     def create_block_task(block: 'Block') -> asyncio.Task:
@@ -157,7 +157,7 @@ def run_blocks_sync(
     selected_blocks: Set[str] = None,
 ) -> None:
     tries_by_block_uuid = {}
-    tasks = dict()
+    tasks = {}
     blocks = Queue()
 
     for block in root_blocks:
@@ -235,7 +235,7 @@ class Block:
         has_callback: bool = False,
     ) -> None:
         if configuration is None:
-            configuration = dict()
+            configuration = {}
         self.name = name or uuid
         self._uuid = uuid
         self.type = block_type
@@ -386,9 +386,9 @@ class Block:
             return self.configuration['data_provider_table']
 
         table_name = f'{self.pipeline.uuid}_{clean_name_orig(self.uuid)}_'\
-                     f'{self.pipeline.version_name}'
+                         f'{self.pipeline.version_name}'
 
-        env = (self.global_vars or dict()).get('env')
+        env = (self.global_vars or {}).get('env')
         if env == ENV_DEV:
             table_name = f'dev_{table_name}'
         elif env == ENV_TEST:
@@ -406,18 +406,14 @@ class Block:
         if not self.content:
             return None
 
-        table_name = extract_create_statement_table_name(self.content)
-        if table_name:
+        if table_name := extract_create_statement_table_name(self.content):
             return table_name
 
         matches = extract_insert_statement_table_names(self.content)
-        if len(matches) == 0:
-            return None
-
-        return matches[len(matches) - 1]
+        return None if len(matches) == 0 else matches[len(matches) - 1]
 
     @classmethod
-    def after_create(self, block: 'Block', **kwargs) -> None:
+    def after_create(cls, block: 'Block', **kwargs) -> None:
         from mage_ai.data_preparation.models.block.dbt.utils import (
             add_blocks_upstream_from_refs,
         )
@@ -431,7 +427,7 @@ class Block:
                 arr = add_blocks_upstream_from_refs(block)
                 upstream_block_uuids += [b.uuid for b in arr]
                 upstream_block_uuids = [*set(upstream_block_uuids)]     # Remove duplicates
-                priority_final = priority if len(upstream_block_uuids) == 0 else None
+                priority_final = priority if not upstream_block_uuids else None
             else:
                 priority_final = priority
 
@@ -443,7 +439,7 @@ class Block:
             )
 
     @classmethod
-    def block_class_from_type(self, block_type: str, language=None, pipeline=None) -> 'Block':
+    def block_class_from_type(cls, block_type: str, language=None, pipeline=None) -> 'Block':
         from mage_ai.data_preparation.models.block.constants import BLOCK_TYPE_TO_CLASS
         from mage_ai.data_preparation.models.block.dbt import DBTBlock
         from mage_ai.data_preparation.models.block.integration import (
@@ -477,22 +473,7 @@ class Block:
         return BLOCK_TYPE_TO_CLASS.get(block_type)
 
     @classmethod
-    def create(
-        self,
-        name,
-        block_type,
-        repo_path,
-        color=None,
-        configuration=None,
-        extension_uuid: str = None,
-        language=None,
-        pipeline=None,
-        priority=None,
-        replicated_block: str = None,
-        upstream_block_uuids=None,
-        config=None,
-        widget=False,
-    ) -> 'Block':
+    def create(cls, name, block_type, repo_path, color=None, configuration=None, extension_uuid: str = None, language=None, pipeline=None, priority=None, replicated_block: str = None, upstream_block_uuids=None, config=None, widget=False) -> 'Block':
         """
         1. Create a new folder for block_type if not exist
         2. Create a new python file with code template
@@ -507,7 +488,7 @@ class Block:
 
         # Don’t create a file if block is replicated from another block
         if not replicated_block and \
-                (BlockType.DBT != block_type or BlockLanguage.YAML == language):
+                    (BlockType.DBT != block_type or BlockLanguage.YAML == language):
 
             block_directory = f'{block_type}s' if block_type != BlockType.CUSTOM else block_type
             block_dir_path = os.path.join(repo_path, block_directory)
@@ -534,7 +515,7 @@ class Block:
                     pipeline_type=pipeline.type if pipeline is not None else None,
                 )
 
-        block = self.block_class_from_type(block_type, pipeline=pipeline)(
+        block = cls.block_class_from_type(block_type, pipeline=pipeline)(
             name,
             uuid,
             block_type,
@@ -551,7 +532,7 @@ class Block:
                 block.file.create_parent_directories(block.file_path)
                 block.file.update_content('')
 
-        self.after_create(
+        cls.after_create(
             block,
             config=config,
             pipeline=pipeline,
@@ -562,8 +543,8 @@ class Block:
         return block
 
     @classmethod
-    def get_all_blocks(self, repo_path) -> Dict:
-        block_uuids = dict()
+    def get_all_blocks(cls, repo_path) -> Dict:
+        block_uuids = {}
         for t in BlockType:
             block_dir = os.path.join(repo_path, f'{t.value}s')
             if not os.path.exists(block_dir):
@@ -575,22 +556,13 @@ class Block:
         return block_uuids
 
     @classmethod
-    def get_block(
-        self,
-        name,
-        uuid,
-        block_type,
-        configuration=None,
-        content=None,
-        language=None,
-        pipeline=None,
-        status=BlockStatus.NOT_EXECUTED,
-    ) -> 'Block':
-        block_class = self.block_class_from_type(
-            block_type,
-            language=language,
-            pipeline=pipeline,
-        ) or Block
+    def get_block(cls, name, uuid, block_type, configuration=None, content=None, language=None, pipeline=None, status=BlockStatus.NOT_EXECUTED) -> 'Block':
+        block_class = (
+            cls.block_class_from_type(
+                block_type, language=language, pipeline=pipeline
+            )
+            or Block
+        )
         return block_class(
             name,
             uuid,
@@ -641,7 +613,7 @@ class Block:
                 pipelines = [
                     pipeline for pipeline in pipelines if self.pipeline.uuid != pipeline.uuid
                 ]
-                if len(pipelines) == 0:
+                if not pipelines:
                     os.remove(self.file_path)
             return
         # If pipeline is not specified, delete the block from all pipelines and delete the file.
@@ -676,7 +648,7 @@ class Block:
         run, use a BlockExecutor.
         """
         if logging_tags is None:
-            logging_tags = dict()
+            logging_tags = {}
 
         if self.conditional_blocks and len(self.conditional_blocks) > 0:
             conditional_message = ''
@@ -689,7 +661,7 @@ class Block:
                     logging_tags=logging_tags,
                 )
                 conditional_message += \
-                    f'Conditional block {conditional_block.uuid} evaluated to {block_result}.\n'
+                        f'Conditional block {conditional_block.uuid} evaluated to {block_result}.\n'
                 result = result and block_result
 
             # Print result to block output
@@ -758,16 +730,17 @@ class Block:
         **kwargs,
     ) -> Dict:
         if logging_tags is None:
-            logging_tags = dict()
+            logging_tags = {}
 
         try:
             if not run_all_blocks:
                 not_executed_upstream_blocks = list(
                     filter(lambda b: b.status == BlockStatus.NOT_EXECUTED, self.upstream_blocks)
                 )
-                all_upstream_is_dbt = all([BlockType.DBT == b.type
-                                           for b in not_executed_upstream_blocks])
-                if not all_upstream_is_dbt and len(not_executed_upstream_blocks) > 0:
+                all_upstream_is_dbt = all(
+                    BlockType.DBT == b.type for b in not_executed_upstream_blocks
+                )
+                if not all_upstream_is_dbt and not_executed_upstream_blocks:
                     upstream_block_uuids = list(map(lambda b: b.uuid, not_executed_upstream_blocks))
                     raise Exception(
                         f"Block {self.uuid}'s upstream blocks have not been executed yet. "
@@ -792,7 +765,7 @@ class Block:
                 **kwargs,
             )
             block_output = self.post_process_output(output)
-            variable_mapping = dict()
+            variable_mapping = {}
 
             if BlockType.CHART == self.type:
                 variable_mapping = block_output
@@ -814,7 +787,7 @@ class Block:
                         variable_mapping,
                         execution_partition=execution_partition,
                         override_outputs=True,
-                        spark=(global_vars or dict()).get('spark'),
+                        spark=(global_vars or {}).get('spark'),
                         dynamic_block_uuid=dynamic_block_uuid,
                     )
                 except ValueError as e:
@@ -900,53 +873,52 @@ class Block:
                 f'Block {self.uuid} does not have any decorated functions. '
                 f'Make sure that a function in the block is decorated with @{self.type}.'
             )
-        else:
-            block_function = decorated_functions[0]
-            sig = signature(block_function)
+        block_function = decorated_functions[0]
+        sig = signature(block_function)
 
-            num_args = sum(
-                arg.kind not in (Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD)
-                for arg in sig.parameters.values()
-            )
-            num_inputs = len(input_vars)
-            num_upstream = len(self.upstream_block_uuids)
+        num_args = sum(
+            arg.kind not in (Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD)
+            for arg in sig.parameters.values()
+        )
+        num_inputs = len(input_vars)
+        num_upstream = len(self.upstream_block_uuids)
 
-            has_var_args = num_args != len(sig.parameters)
+        has_var_args = num_args != len(sig.parameters)
 
-            if num_args > num_inputs:
-                if num_upstream < num_args:
-                    raise Exception(
-                        f'Block {self.uuid} may be missing upstream dependencies. '
-                        f'It expected to have {"at least " if has_var_args else ""}{num_args} '
-                        f'arguments, but only received {num_inputs}. '
-                        f'Confirm that the @{self.type} method declaration has the correct number '
-                        'of arguments.'
-                    )
-                else:
-                    raise Exception(
-                        f'Block {self.uuid} is missing input arguments. '
-                        f'It expected to have {"at least " if has_var_args else ""}{num_args} '
-                        f'arguments, but only received {num_inputs}. '
-                        f'Double check the @{self.type} method declaration has the correct number '
-                        'of arguments and that the upstream blocks have been executed.'
-                    )
-            elif num_args < num_inputs and not has_var_args:
-                if num_upstream > num_args:
-                    raise Exception(
-                        f'Block {self.uuid} may have too many upstream dependencies. '
-                        f'It expected to have {num_args} arguments, but received {num_inputs}. '
-                        f'Confirm that the @{self.type} method declaration has the correct number '
-                        'of arguments.'
-                    )
-                else:
-                    raise Exception(
-                        f'Block {self.uuid} has too many input arguments. '
-                        f'It expected to have {num_args} arguments, but received {num_inputs}. '
-                        f'Confirm that the @{self.type} method declaration has the correct number '
-                        'of arguments.'
-                    )
+        if num_args > num_inputs:
+            if num_upstream < num_args:
+                raise Exception(
+                    f'Block {self.uuid} may be missing upstream dependencies. '
+                    f'It expected to have {"at least " if has_var_args else ""}{num_args} '
+                    f'arguments, but only received {num_inputs}. '
+                    f'Confirm that the @{self.type} method declaration has the correct number '
+                    'of arguments.'
+                )
+            else:
+                raise Exception(
+                    f'Block {self.uuid} is missing input arguments. '
+                    f'It expected to have {"at least " if has_var_args else ""}{num_args} '
+                    f'arguments, but only received {num_inputs}. '
+                    f'Double check the @{self.type} method declaration has the correct number '
+                    'of arguments and that the upstream blocks have been executed.'
+                )
+        elif num_args < num_inputs and not has_var_args:
+            if num_upstream > num_args:
+                raise Exception(
+                    f'Block {self.uuid} may have too many upstream dependencies. '
+                    f'It expected to have {num_args} arguments, but received {num_inputs}. '
+                    f'Confirm that the @{self.type} method declaration has the correct number '
+                    'of arguments.'
+                )
+            else:
+                raise Exception(
+                    f'Block {self.uuid} has too many input arguments. '
+                    f'It expected to have {num_args} arguments, but received {num_inputs}. '
+                    f'Confirm that the @{self.type} method declaration has the correct number '
+                    'of arguments.'
+                )
 
-            return block_function
+        return block_function
 
     def execute_block(
         self,
@@ -966,11 +938,11 @@ class Block:
         **kwargs,
     ) -> Dict:
         if logging_tags is None:
-            logging_tags = dict()
+            logging_tags = {}
 
         # Add pipeline uuid and block uuid to global_vars
         global_vars = merge_dict(
-            global_vars or dict(),
+            global_vars or {},
             dict(
                 pipeline_uuid=self.pipeline.uuid,
                 block_uuid=self.uuid,
@@ -1003,7 +975,7 @@ class Block:
                         outputs_from_input_vars[upstream_block_uuid] = input_var
                         outputs_from_input_vars[f'df_{idx + 1}'] = input_var
             else:
-                outputs_from_input_vars = dict()
+                outputs_from_input_vars = {}
 
             global_vars_copy = global_vars.copy()
             for kwargs_var in kwargs_vars:
@@ -1028,9 +1000,7 @@ class Block:
                 **kwargs,
             )
 
-        output_message = dict(output=outputs)
-
-        return output_message
+        return dict(output=outputs)
 
     def _execute_block(
         self,
@@ -1051,7 +1021,7 @@ class Block:
         **kwargs,
     ) -> List:
         if logging_tags is None:
-            logging_tags = dict()
+            logging_tags = {}
 
         decorated_functions = []
         test_functions = []
@@ -1060,7 +1030,7 @@ class Block:
             self.type: self._block_decorator(decorated_functions),
             'test': self._block_decorator(test_functions),
         }
-        results.update(outputs_from_input_vars)
+        results |= outputs_from_input_vars
 
         if custom_code is not None and custom_code.strip():
             if BlockType.CHART != self.type or (not self.group_by_columns or not self.metrics):
@@ -1109,12 +1079,12 @@ class Block:
         test_execution: bool = False,
     ) -> Dict:
         sig = signature(block_function)
-        has_kwargs = any([p.kind == p.VAR_KEYWORD for p in sig.parameters.values()])
-        if has_kwargs and global_vars is not None and len(global_vars) != 0:
-            output = block_function(*input_vars, **global_vars)
-        else:
-            output = block_function(*input_vars)
-        return output
+        has_kwargs = any(p.kind == p.VAR_KEYWORD for p in sig.parameters.values())
+        return (
+            block_function(*input_vars, **global_vars)
+            if has_kwargs and global_vars is not None and len(global_vars) != 0
+            else block_function(*input_vars)
+        )
 
     def exists(self) -> bool:
         return os.path.exists(self.file_path)
@@ -1402,12 +1372,12 @@ df = get_variable('{self.pipeline.uuid}', '{block_uuid}', 'df')
         return outputs + data_products
 
     def __save_outputs_prepare(self, outputs) -> Dict:
-        variable_mapping = dict()
+        variable_mapping = {}
         for o in outputs:
             if o is None:
                 continue
             if all(k in o for k in ['variable_uuid', 'text_data']) and \
-                    not is_output_variable(o['variable_uuid']):
+                        not is_output_variable(o['variable_uuid']):
                 variable_mapping[o['variable_uuid']] = o['text_data']
 
         self._outputs = outputs
@@ -1671,15 +1641,15 @@ df = get_variable('{self.pipeline.uuid}', '{block_uuid}', 'df')
         from_notebook: bool = False,
     ) -> None:
         if global_vars is None:
-            global_vars = dict()
+            global_vars = {}
         if logging_tags is None:
-            logging_tags = dict()
+            logging_tags = {}
 
         self.dynamic_block_uuid = dynamic_block_uuid
 
         if self.pipeline \
-            and PipelineType.INTEGRATION == self.pipeline.type \
-                and self.type in [BlockType.DATA_LOADER, BlockType.DATA_EXPORTER]:
+                and PipelineType.INTEGRATION == self.pipeline.type \
+                    and self.type in [BlockType.DATA_LOADER, BlockType.DATA_EXPORTER]:
 
             return
 
@@ -1710,9 +1680,11 @@ df = get_variable('{self.pipeline.uuid}', '{block_uuid}', 'df')
                 self.uuid,
                 variable,
                 partition=execution_partition,
-                spark=(global_vars or dict()).get('spark'),
+                spark=(global_vars or {}).get('spark'),
             )
-            for variable in self.output_variables(execution_partition=execution_partition)
+            for variable in self.output_variables(
+                execution_partition=execution_partition
+            )
         ]
 
         with redirect_stdout(stdout):
@@ -1720,7 +1692,7 @@ df = get_variable('{self.pipeline.uuid}', '{block_uuid}', 'df')
             for func in test_functions:
                 try:
                     sig = signature(func)
-                    has_kwargs = any([p.kind == p.VAR_KEYWORD for p in sig.parameters.values()])
+                    has_kwargs = any(p.kind == p.VAR_KEYWORD for p in sig.parameters.values())
                     if has_kwargs and global_vars is not None and len(global_vars) != 0:
                         func(*outputs, **global_vars)
                     else:
@@ -1830,7 +1802,7 @@ df = get_variable('{self.pipeline.uuid}', '{block_uuid}', 'df')
 
         print_variables_keys = sorted(print_variables.keys(), key=lambda k: int(k.split('_')[-1]))
 
-        consolidated_print_variables = dict()
+        consolidated_print_variables = {}
         state = dict(
             msg_key=None,
             msg_value=None,
@@ -1884,7 +1856,7 @@ df = get_variable('{self.pipeline.uuid}', '{block_uuid}', 'df')
         return variable_mapping
 
     def __enrich_global_vars(self, global_vars: Dict = None) -> Dict:
-        global_vars = global_vars or dict()
+        global_vars = global_vars or {}
         if ((self.pipeline is not None and self.pipeline.type == PipelineType.DATABRICKS) or
                 is_spark_env()):
             if not global_vars.get('spark'):
@@ -2040,15 +2012,17 @@ df = get_variable('{self.pipeline.uuid}', '{block_uuid}', 'df')
         """
         objs = []
         for b in self.upstream_blocks:
-            for v in b.output_variables(execution_partition=execution_partition):
-                objs.append(
-                    self.pipeline.variable_manager.get_variable_object(
-                        self.pipeline.uuid,
-                        b.uuid,
-                        v,
-                        partition=execution_partition,
-                    ),
+            objs.extend(
+                self.pipeline.variable_manager.get_variable_object(
+                    self.pipeline.uuid,
+                    b.uuid,
+                    v,
+                    partition=execution_partition,
                 )
+                for v in b.output_variables(
+                    execution_partition=execution_partition
+                )
+            )
         return objs
 
     def output_variables(self, execution_partition: str = None) -> List[str]:
@@ -2254,20 +2228,19 @@ class SensorBlock(Block):
                 global_vars=global_vars,
                 test_execution=test_execution,
             )
-        else:
-            sig = signature(block_function)
-            has_args = any([p.kind == p.VAR_POSITIONAL for p in sig.parameters.values()])
-            has_kwargs = any([p.kind == p.VAR_KEYWORD for p in sig.parameters.values()])
-            use_global_vars = has_kwargs and global_vars is not None and len(global_vars) != 0
-            args = input_vars if has_args else []
-            while True:
-                condition = block_function(*args, **global_vars) \
+        sig = signature(block_function)
+        has_args = any(p.kind == p.VAR_POSITIONAL for p in sig.parameters.values())
+        has_kwargs = any(p.kind == p.VAR_KEYWORD for p in sig.parameters.values())
+        use_global_vars = has_kwargs and global_vars is not None and len(global_vars) != 0
+        args = input_vars if has_args else []
+        while True:
+            condition = block_function(*args, **global_vars) \
                             if use_global_vars else block_function()
-                if condition:
-                    break
-                print('Sensor sleeping for 1 minute...')
-                time.sleep(60)
-            return []
+            if condition:
+                break
+            print('Sensor sleeping for 1 minute...')
+            time.sleep(60)
+        return []
 
 
 class AddonBlock(Block):
@@ -2279,7 +2252,7 @@ class AddonBlock(Block):
     ) -> Dict:
         pipeline_run = kwargs.get('pipeline_run')
         global_vars = merge_dict(
-            global_vars or dict(),
+            global_vars or {},
             dict(
                 pipeline_uuid=self.pipeline.uuid,
                 block_uuid=self.uuid,
@@ -2290,8 +2263,8 @@ class AddonBlock(Block):
             global_vars['parent_block_uuid'] = parent_block.uuid
 
         if parent_block and \
-                parent_block.pipeline and \
-                PipelineType.INTEGRATION == parent_block.pipeline.type:
+                    parent_block.pipeline and \
+                    PipelineType.INTEGRATION == parent_block.pipeline.type:
 
             template_runtime_configuration = parent_block.template_runtime_configuration
             index = template_runtime_configuration.get('index', None)
@@ -2409,10 +2382,10 @@ class CallbackBlock(AddonBlock):
             callback_functions_legacy = []
             callback_status = None
 
-            if 'on_failure' == callback:
+            if callback == 'on_failure':
                 callback_functions_legacy = failure_functions
                 callback_status = CallbackStatus.FAILURE
-            elif 'on_success' == callback:
+            elif callback == 'on_success':
                 callback_functions_legacy = success_functions
                 callback_status = CallbackStatus.SUCCESS
 

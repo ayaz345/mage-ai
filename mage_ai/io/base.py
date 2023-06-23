@@ -160,8 +160,7 @@ class BaseFile(BaseIO):
             DataFrame: Data frame object loaded from the specified data frame.
         """
         reader = self.__get_reader(format)
-        df = reader(input, **kwargs)
-        return df
+        return reader(input, **kwargs)
 
     def __trim_df(self, df: DataFrame, limit: int = QUERY_ROW_LIMIT) -> DataFrame:
         """
@@ -263,7 +262,7 @@ class BaseSQLDatabase(BaseIO):
         Returns:
             DataFrame: Sampled data from the data frame.
         """
-        return self.load(f'SELECT * FROM {schema}.{table} LIMIT {str(size)};', **kwargs)
+        return self.load(f'SELECT * FROM {schema}.{table} LIMIT {size};', **kwargs)
 
     def _clean_query(self, query_string: str) -> str:
         """

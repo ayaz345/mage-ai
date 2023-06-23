@@ -14,15 +14,15 @@ def full_path(*args) -> str:
 class FolderResource(GenericResource):
     @classmethod
     @safe_db_query
-    def create(self, payload: Dict, user, **kwargs) -> 'FolderResource':
+    def create(cls, payload: Dict, user, **kwargs) -> 'FolderResource':
         path = full_path(payload.get('path'), payload.get('name'))
-        os.makedirs(path, exist_ok=True if payload.get('overwrite', False) else False)
-        return self(dict(path=path), user, **kwargs)
+        os.makedirs(path, exist_ok=bool(payload.get('overwrite', False)))
+        return cls(dict(path=path), user, **kwargs)
 
     @classmethod
-    def member(self, pk, user, **kwargs):
+    def member(cls, pk, user, **kwargs):
         path = full_path(urllib.parse.unquote(pk))
-        return self(dict(path=path), user, **kwargs)
+        return cls(dict(path=path), user, **kwargs)
 
     @safe_db_query
     def delete(self, **kwargs):

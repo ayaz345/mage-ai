@@ -18,8 +18,7 @@ logger = Logger().new_server_logger(__name__)
 def run_scheduler():
     from mage_ai.orchestration.triggers.loop_time_trigger import LoopTimeTrigger
 
-    sentry_dsn = SENTRY_DSN
-    if sentry_dsn:
+    if sentry_dsn := SENTRY_DSN:
         sentry_sdk.init(
             sentry_dsn,
             traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,

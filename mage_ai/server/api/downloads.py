@@ -12,21 +12,22 @@ from mage_ai.settings import REQUIRE_USER_AUTHENTICATION
 class ApiDownloadHandler(BaseHandler):
     async def get(self, pipeline_uuid, block_uuid, **kwargs):
         self.set_header('Content-Type', 'text/csv')
-        self.set_header('Content-Disposition', 'attachment; filename=' + f'{block_uuid}.csv')
+        self.set_header(
+            'Content-Disposition', f'attachment; filename={block_uuid}.csv'
+        )
 
         api_key = self.get_argument('api_key', None, True)
         token = self.get_argument('token', None, True)
         if REQUIRE_USER_AUTHENTICATION:
             authenticated = False
             if api_key and token:
-                oauth_client = Oauth2Application.query.filter(
+                if oauth_client := Oauth2Application.query.filter(
                     Oauth2Application.client_id == api_key,
-                ).first()
-                if oauth_client:
+                ).first():
                     oauth_token, valid = authenticate_client_and_token(oauth_client.id, token)
                     authenticated = valid and \
-                        oauth_token and \
-                        oauth_token.user
+                            oauth_token and \
+                            oauth_token.user
             if not authenticated:
                 raise Exception('Unauthorized access to download block output.')
 

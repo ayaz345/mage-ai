@@ -174,8 +174,7 @@ class Snowflake(BaseSQLConnection):
 
         with self.printer.print_msg(print_message):
             with self.conn.cursor() as cur:
-                columns = None
-                if (database and schema and table_name) or full_table_name:
+                if database and schema and table_name or full_table_name:
                     columns = self.get_columns(
                         cur,
                         database=database,
@@ -183,7 +182,8 @@ class Snowflake(BaseSQLConnection):
                         table_name=table_name,
                         full_table_name=full_table_name,
                     )
-
+                else:
+                    columns = None
                 results = cur.execute(
                     self._enforce_limit(query_string, limit),
                     *args,

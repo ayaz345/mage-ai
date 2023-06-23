@@ -18,155 +18,165 @@ class BaseResource(Resource):
     parent_resource_attr = {}
 
     @classmethod
-    def policy_class(self):
-        model_name = self.__name__.replace('Resource', '')
+    def policy_class(cls):
+        model_name = cls.__name__.replace('Resource', '')
         return getattr(
-            importlib.import_module(
-                'mage_ai.api.policies.{}Policy'.format(model_name)),
-            '{}Policy'.format(model_name),
+            importlib.import_module(f'mage_ai.api.policies.{model_name}Policy'),
+            f'{model_name}Policy',
         )
 
     @classmethod
-    def presenter_class(self):
-        model_name = self.__name__.replace('Resource', '')
+    def presenter_class(cls):
+        model_name = cls.__name__.replace('Resource', '')
         return getattr(
             importlib.import_module(
-                'mage_ai.api.presenters.{}Presenter'.format(model_name)),
-            '{}Presenter'.format(model_name),
+                f'mage_ai.api.presenters.{model_name}Presenter'
+            ),
+            f'{model_name}Presenter',
         )
 
     @classmethod
-    def collective_loader(self):
-        if not self.collective_loader_attr.get(self.__name__):
-            self.collective_loader_attr[self.__name__] = {}
-        return self.collective_loader_attr[self.__name__]
+    def collective_loader(cls):
+        if not cls.collective_loader_attr.get(cls.__name__):
+            cls.collective_loader_attr[cls.__name__] = {}
+        return cls.collective_loader_attr[cls.__name__]
 
     @classmethod
-    def parent_models(self):
-        if not self.parent_models_attr.get(self.__name__):
-            self.parent_models_attr[self.__name__] = {}
-        return self.parent_models_attr[self.__name__]
+    def parent_models(cls):
+        if not cls.parent_models_attr.get(cls.__name__):
+            cls.parent_models_attr[cls.__name__] = {}
+        return cls.parent_models_attr[cls.__name__]
 
     @classmethod
-    def parent_resource(self):
-        if not self.parent_resource_attr.get(self.__name__):
-            self.parent_resource_attr[self.__name__] = {}
-        return self.parent_resource_attr[self.__name__]
+    def parent_resource(cls):
+        if not cls.parent_resource_attr.get(cls.__name__):
+            cls.parent_resource_attr[cls.__name__] = {}
+        return cls.parent_resource_attr[cls.__name__]
 
     @classmethod
-    def register_collective_loader(self, key, **kwargs):
-        self.collective_loader()[key] = kwargs
+    def register_collective_loader(cls, key, **kwargs):
+        cls.collective_loader()[key] = kwargs
 
     @classmethod
-    def register_collective_loader_find(self, resource_class, **kwargs):
+    def register_collective_loader_find(cls, resource_class, **kwargs):
         attribute = kwargs.get('attribute',
                                resource_class.resource_name_singular())
-        self.register_collective_loader(
+        cls.register_collective_loader(
             attribute,
             load=collective_loaders.build_load(
-                resource_class,
-                attribute=attribute),
-            select=collective_loaders.build_select_find(
-                '{}_id'.format(attribute)),
+                resource_class, attribute=attribute
+            ),
+            select=collective_loaders.build_select_find(f'{attribute}_id'),
         )
 
     @classmethod
-    def register_collective_loader_select(self, resource_class, **kwargs):
+    def register_collective_loader_select(cls, resource_class, **kwargs):
         attribute = kwargs.get('attribute', resource_class.resource_name())
-        self.register_collective_loader(
+        cls.register_collective_loader(
             attribute,
             load=collective_loaders.build_load_select(
-                self,
-                resource_class,
-                attribute=self.resource_name_singular()),
+                cls, resource_class, attribute=cls.resource_name_singular()
+            ),
             select=collective_loaders.build_select_filter(
-                '{}_id'.format(
-                    self.resource_name_singular())),
+                f'{cls.resource_name_singular()}_id'
+            ),
         )
 
     @classmethod
-    def register_parent_model(self, key, value):
-        self.parent_models()[key] = value
+    def register_parent_model(cls, key, value):
+        cls.parent_models()[key] = value
 
     @classmethod
-    def register_parent_models(self, key_values):
+    def register_parent_models(cls, key_values):
         for key, value in key_values.items():
-            self.register_parent_model(key, value)
+            cls.register_parent_model(key, value)
 
     @classmethod
-    def register_parent_resource(self, resource_class, **kwargs):
+    def register_parent_resource(cls, resource_class, **kwargs):
         column_name = kwargs.get(
-            'column_name',
-            '{}_id'.format(resource_class.resource_name_singular()),
+            'column_name', f'{resource_class.resource_name_singular()}_id'
         )
-        self.parent_resource()[column_name] = resource_class
+        cls.parent_resource()[column_name] = resource_class
 
     @classmethod
-    def build_result_set(self, arr, user, **kwargs):
-        return ResultSet([mod if issubclass(mod.__class__, BaseResource) else self(
-            mod, user, **kwargs) for mod in arr], )
+    def build_result_set(cls, arr, user, **kwargs):
+        return ResultSet(
+            [
+                mod
+                if issubclass(mod.__class__, BaseResource)
+                else cls(mod, user, **kwargs)
+                for mod in arr
+            ]
+        )
 
     @classmethod
-    def collection(self, query, meta, user, **kwargs):
+    def collection(cls, query, meta, user, **kwargs):
         """
         Subclasses override this method
         """
         pass
 
     @classmethod
-    def create(self, payload, user, **kwargs):
+    def create(cls, payload, user, **kwargs):
         """
         Subclasses override this method
         """
         pass
 
     @classmethod
-    def member(self, pk, user, **kwargs):
+    def member(cls, pk, user, **kwargs):
         """
         Subclasses override this method
         """
         pass
 
     @classmethod
-    def before_create(self, payload, user, **kwargs):
+    def before_create(cls, payload, user, **kwargs):
         pass
 
     @classmethod
-    async def process_create(self, payload, user, **kwargs):
-        self.on_create_callback = None
-        self.on_create_failure_callback = None
-        before_create = self.before_create(payload, user, **kwargs)
+    async def process_create(cls, payload, user, **kwargs):
+        cls.on_create_callback = None
+        cls.on_create_failure_callback = None
+        before_create = cls.before_create(payload, user, **kwargs)
 
         try:
-            res = self.create(payload, user, **merge_dict(kwargs, {
-                'before_create': before_create,
-            }))
+            res = cls.create(
+                payload,
+                user,
+                **merge_dict(
+                    kwargs,
+                    {
+                        'before_create': before_create,
+                    },
+                )
+            )
             if res and inspect.isawaitable(res):
                 res = await res
 
-            if self.on_create_callback:
-                callback = self.on_create_callback(resource=res)
+            if cls.on_create_callback:
+                callback = cls.on_create_callback(resource=res)
                 if callback and inspect.isawaitable(callback):
                     await callback
 
             return res
         except Exception as err:
-            if self.on_create_failure_callback:
-                self.on_create_failure_callback(resource=res)
+            if cls.on_create_failure_callback:
+                cls.on_create_failure_callback(resource=res)
 
             raise err
 
     @classmethod
-    async def process_collection(self, query, meta, user, **kwargs):
-        res = self.collection(query, meta, user, **kwargs)
+    async def process_collection(cls, query, meta, user, **kwargs):
+        res = cls.collection(query, meta, user, **kwargs)
         if res and inspect.isawaitable(res):
             res = await res
         return res
 
     @classmethod
-    async def process_member(self, pk, user, **kwargs):
+    async def process_member(cls, pk, user, **kwargs):
         try:
-            res = self.member(pk, user, **kwargs)
+            res = cls.member(pk, user, **kwargs)
             if res and inspect.isawaitable(res):
                 res = await res
 
@@ -174,24 +184,21 @@ class BaseResource(Resource):
         except DoesNotExistError as err:
             if settings.DEBUG:
                 raise err
-            else:
-                error = ApiError.RESOURCE_NOT_FOUND
-                raise ApiError(error)
+            error = ApiError.RESOURCE_NOT_FOUND
+            raise ApiError(error)
 
     @classmethod
-    def resource_name(self):
-        return inflection.pluralize(self.resource_name_singular())
+    def resource_name(cls):
+        return inflection.pluralize(cls.resource_name_singular())
 
     @classmethod
-    def resource_name_singular(self):
-        return inflection.underscore(
-            self.__name__.replace(
-                'Resource', '')).lower()
+    def resource_name_singular(cls):
+        return inflection.underscore(cls.__name__.replace('Resource', '')).lower()
 
     @classmethod
-    async def get_model(self, pk):
-        if self.model_class:
-            return self.model_class.query.get(pk)
+    async def get_model(cls, pk):
+        if cls.model_class:
+            return cls.model_class.query.get(pk)
 
     def delete(self, **kwargs):
         """
@@ -281,10 +288,7 @@ class BaseResource(Resource):
             loader = self.__class__.collective_loader().get(name, None)
             if loader:
                 arr = self.collective_load_for_attribute(name)
-                if loader['select']:
-                    val = loader['select'](self, arr)
-                else:
-                    val = arr
+                val = loader['select'](self, arr) if loader['select'] else arr
             else:
                 val = getattr(self.model, name)
 
@@ -296,4 +300,5 @@ class BaseResource(Resource):
             #     return val
 
             return val
+
         return _missing()

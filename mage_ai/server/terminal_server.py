@@ -75,15 +75,11 @@ class TerminalWebsocketServer(terminado.TermSocket):
 
         user = None
         if REQUIRE_USER_AUTHENTICATION and api_key and token:
-            oauth_client = Oauth2Application.query.filter(
+            if oauth_client := Oauth2Application.query.filter(
                 Oauth2Application.client_id == api_key,
-            ).first()
-            if oauth_client:
+            ).first():
                 oauth_token, valid = authenticate_client_and_token(oauth_client.id, token)
-                valid = valid and \
-                    oauth_token and \
-                    oauth_token.user
-                if valid:
+                if valid := valid and oauth_token and oauth_token.user:
                     user = oauth_token.user
 
         self.term_name = term_name if term_name else 'tty'
@@ -108,10 +104,9 @@ class TerminalWebsocketServer(terminado.TermSocket):
             valid = False
 
             if api_key and token:
-                oauth_client = Oauth2Application.query.filter(
+                if oauth_client := Oauth2Application.query.filter(
                     Oauth2Application.client_id == api_key,
-                ).first()
-                if oauth_client:
+                ).first():
                     oauth_token, valid = authenticate_client_and_token(oauth_client.id, token)
                     if valid and oauth_token and oauth_token.user:
                         valid = has_at_least_editor_role(

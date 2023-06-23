@@ -74,8 +74,7 @@ def get_valid_secrets() -> List:
 
 def get_secret_value(name: str, repo_name: str = None) -> str:
     from mage_ai.orchestration.db.models.secrets import Secret
-    key = get_encryption_key()
-    if key:
+    if key := get_encryption_key():
         fernet = Fernet(key)
 
         conditions = [Secret.name == name]

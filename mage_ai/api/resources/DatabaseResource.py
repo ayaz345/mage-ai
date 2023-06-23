@@ -14,11 +14,11 @@ class DatabaseResource(BaseResource):
 
     @classmethod
     @safe_db_query
-    async def process_collection(self, query, meta, user, **kwargs):
-        limit = int(meta.get(META_KEY_LIMIT, self.DEFAULT_LIMIT))
+    async def process_collection(cls, query, meta, user, **kwargs):
+        limit = int(meta.get(META_KEY_LIMIT, cls.DEFAULT_LIMIT))
         offset = int(meta.get(META_KEY_OFFSET, 0))
 
-        total_results = self.collection(query, meta, user, **kwargs)
+        total_results = cls.collection(query, meta, user, **kwargs)
         if total_results and inspect.isawaitable(total_results):
             total_results = await total_results
 
@@ -38,11 +38,7 @@ class DatabaseResource(BaseResource):
         has_next = results_size > limit
         final_end_idx = results_size - 1 if has_next else results_size
 
-        result_set = self.build_result_set(
-            results[0:final_end_idx],
-            user,
-            **kwargs,
-        )
+        result_set = cls.build_result_set(results[:final_end_idx], user, **kwargs)
         result_set.metadata = {
             'count': total_count,
             'next': has_next,
@@ -71,11 +67,11 @@ class DatabaseResource(BaseResource):
 
     @classmethod
     @safe_db_query
-    def create(self, payload, user, **kwargs):
+    def create(cls, payload, user, **kwargs):
         parent_model = kwargs.get('parent_model')
         column_name = None
         parent_class = None
-        if parent_model and self.parent_models():
+        if parent_model and cls.parent_models():
             try:
                 column_name, parent_class = next(
                     (k, v) for k, v in self.parent_models().items() if isinstance(
@@ -83,7 +79,7 @@ class DatabaseResource(BaseResource):
                 payload[column_name] = parent_model.id
             except StopIteration:
                 pass
-        if parent_model and self.parent_resource():
+        if parent_model and cls.parent_resource():
             try:
                 column_name, parent_class = next(
                     (k, v) for k, v in self.parent_resource().items() if isinstance(
@@ -92,11 +88,11 @@ class DatabaseResource(BaseResource):
             except StopIteration:
                 pass
         try:
-            model = self.model_class(**payload)
+            model = cls.model_class(**payload)
             model.full_clean()
             model.save()
-            self.create_associated_resources(model, payload, user, **kwargs)
-            return self(model, user, **kwargs)
+            cls.create_associated_resources(model, payload, user, **kwargs)
+            return cls(model, user, **kwargs)
         except ValidationError as err:
             raise ApiError(merge_dict(ApiError.RESOURCE_INVALID, {
                 # We need to return 200 so the front end client can process the error response
@@ -107,7 +103,7 @@ class DatabaseResource(BaseResource):
 
     @classmethod
     @safe_db_query
-    def create_associated_resources(self, model, payload, user, **kwargs):
+    def create_associated_resources(cls, model, payload, user, **kwargs):
         """
         Subclasses override this method
         """
@@ -115,16 +111,16 @@ class DatabaseResource(BaseResource):
 
     @classmethod
     @safe_db_query
-    def member(self, pk, user, **kwargs):
+    def member(cls, pk, user, **kwargs):
         try:
             db_connection.session.commit()
         except Exception:
             db_connection.session.rollback()
 
-        model = self.model_class.query.get(pk)
-        if not model:
-            raise DoesNotExistError(f'{self.model_class.__name__} {pk} does not exist.')
-        return self(model, user, **kwargs)
+        if model := cls.model_class.query.get(pk):
+            return cls(model, user, **kwargs)
+        else:
+            raise DoesNotExistError(f'{cls.model_class.__name__} {pk} does not exist.')
 
     @safe_db_query
     def delete(self, **kwargs):

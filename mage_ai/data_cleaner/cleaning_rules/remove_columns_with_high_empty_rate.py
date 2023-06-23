@@ -22,7 +22,7 @@ class RemoveColumnsWithHighEmptyRate(BaseRule):
                     columns_with_missing_values.append(c)
 
         suggestions = []
-        if len(columns_with_no_values) > 0:
+        if columns_with_no_values:
             suggestions.append(
                 self._build_transformer_action_suggestion(
                     'Remove columns with no values',
@@ -32,7 +32,7 @@ class RemoveColumnsWithHighEmptyRate(BaseRule):
                     axis=Axis.COLUMN,
                 )
             )
-        if len(columns_with_missing_values) > 0:
+        if columns_with_missing_values:
             suggestions.append(
                 self._build_transformer_action_suggestion(
                     'Remove columns with high empty rate',

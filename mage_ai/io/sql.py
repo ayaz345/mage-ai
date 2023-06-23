@@ -64,10 +64,7 @@ class BaseSQL(BaseSQLConnection):
         table_name: str,
         query_string: str,
     ) -> str:
-        return 'CREATE TABLE {} AS\n{}'.format(
-            table_name,
-            query_string,
-        )
+        return f'CREATE TABLE {table_name} AS\n{query_string}'
 
     def default_database(self) -> str:
         return None
@@ -236,11 +233,7 @@ class BaseSQL(BaseSQLConnection):
         elif type(df) is list:
             df = DataFrame(df)
 
-        if schema_name:
-            full_table_name = f'{schema_name}.{table_name}'
-        else:
-            full_table_name = table_name
-
+        full_table_name = f'{schema_name}.{table_name}' if schema_name else table_name
         if not query_string:
             if index:
                 df = df.reset_index()

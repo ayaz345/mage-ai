@@ -21,11 +21,14 @@ def convert_col_type(df_col, col_type):
 
 def convert_value_type(feature_uuid, action, value):
     action_variables = action.get('action_variables', {})
-    column_type = None
-    for v in action_variables.values():
-        if v['type'] == 'feature' and v['feature']['uuid'] == feature_uuid:
-            column_type = v['feature']['column_type']
-            break
+    column_type = next(
+        (
+            v['feature']['column_type']
+            for v in action_variables.values()
+            if v['type'] == 'feature' and v['feature']['uuid'] == feature_uuid
+        ),
+        None,
+    )
     if column_type == ColumnType.NUMBER:
         value = int(value)
     elif column_type == ColumnType.NUMBER_WITH_DECIMALS:
@@ -53,21 +56,22 @@ def extract_join_feature_set_version_id(payload):
 
 def get_column_type(feature_uuid, action):
     action_variables = action.get('action_variables', {})
-    column_type = None
-    for v in action_variables.values():
-        if v['type'] == 'feature' and v['feature']['uuid'] == feature_uuid:
-            column_type = v['feature']['column_type']
-            break
-    return column_type
+    return next(
+        (
+            v['feature']['column_type']
+            for v in action_variables.values()
+            if v['type'] == 'feature' and v['feature']['uuid'] == feature_uuid
+        ),
+        None,
+    )
 
 
 def get_time_window_str(window_in_seconds):
     if window_in_seconds is None:
         return None
     if window_in_seconds >= DAY_SECONDS:
-        time_window = f'{int(window_in_seconds / DAY_SECONDS)}d'
+        return f'{int(window_in_seconds / DAY_SECONDS)}d'
     elif window_in_seconds >= HOUR_SECONDS:
-        time_window = f'{int(window_in_seconds / HOUR_SECONDS)}h'
+        return f'{int(window_in_seconds / HOUR_SECONDS)}h'
     else:
-        time_window = f'{window_in_seconds}s'
-    return time_window
+        return f'{window_in_seconds}s'

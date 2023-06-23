@@ -54,9 +54,8 @@ class PipelineResource(BaseResource):
                 err_message = f'Error loading pipeline {uuid}: {err}.'
                 if err.__class__.__name__ == 'OSError' and 'Too many open files' in err.strerror:
                     raise Exception(err_message)
-                else:
-                    print(err_message)
-                    return None
+                print(err_message)
+                return None
 
         pipelines = await asyncio.gather(
             *[get_pipeline(uuid) for uuid in pipeline_uuids]
@@ -123,7 +122,7 @@ class PipelineResource(BaseResource):
 
     @classmethod
     @safe_db_query
-    def create(self, payload, user, **kwargs):
+    def create(cls, payload, user, **kwargs):
         clone_pipeline_uuid = payload.get('clone_pipeline_uuid')
         name = payload.get('name')
         pipeline_type = payload.get('type')
@@ -138,22 +137,22 @@ class PipelineResource(BaseResource):
             source = Pipeline.get(clone_pipeline_uuid)
             pipeline = Pipeline.duplicate(source, name)
 
-        return self(pipeline, user, **kwargs)
+        return cls(pipeline, user, **kwargs)
 
     @classmethod
     @safe_db_query
-    async def get_model(self, pk):
+    async def get_model(cls, pk):
         return await Pipeline.get_async(pk)
 
     @classmethod
     @safe_db_query
-    async def member(self, pk, user, **kwargs):
+    async def member(cls, pk, user, **kwargs):
         pipeline = await Pipeline.get_async(pk)
 
         if kwargs.get('api_operation_action', None) != DELETE:
             switch_active_kernel(PIPELINE_TO_KERNEL_NAME[pipeline.type])
 
-        return self(pipeline, user, **kwargs)
+        return cls(pipeline, user, **kwargs)
 
     @safe_db_query
     def delete(self, **kwargs):

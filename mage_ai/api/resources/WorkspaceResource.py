@@ -35,8 +35,8 @@ logger = Logger().new_server_logger(__name__)
 class WorkspaceResource(GenericResource):
     @classmethod
     @safe_db_query
-    def collection(self, query_arg, meta, user, **kwargs):
-        cluster_type = self.verify_project()
+    def collection(cls, query_arg, meta, user, **kwargs):
+        cluster_type = cls.verify_project()
         if not cluster_type:
             cluster_type = query_arg.get('cluster_type', [None])
             if cluster_type:
@@ -48,7 +48,7 @@ class WorkspaceResource(GenericResource):
             user_id = user_id[0]
             query_user = User.query.get(user_id)
 
-        instances = self.get_instances(cluster_type)
+        instances = cls.get_instances(cluster_type)
         instance_map = {
             instance.get('name'): instance
             for instance in instances
@@ -89,32 +89,36 @@ class WorkspaceResource(GenericResource):
                 except Exception as e:
                     print(f'Error fetching workspace: {str(e)}')
 
-        return self.build_result_set(workspaces, user, **kwargs)
+        return cls.build_result_set(workspaces, user, **kwargs)
 
     @classmethod
     @safe_db_query
-    def member(self, pk, user, **kwargs):
-        cluster_type = self.verify_project(pk)
+    def member(cls, pk, user, **kwargs):
+        cluster_type = cls.verify_project(pk)
         if not cluster_type:
             query = kwargs.get('query', {})
             cluster_type = query.get('cluster_type')[0]
 
-        instances = self.get_instances(cluster_type)
+        instances = cls.get_instances(cluster_type)
         instance_map = {
             instance.get('name'): instance
             for instance in instances
         }
 
-        return self(dict(
-            name=pk,
-            cluster_type=cluster_type,
-            instance=instance_map[pk],
-        ), user, **kwargs)
+        return cls(
+            dict(
+                name=pk,
+                cluster_type=cluster_type,
+                instance=instance_map[pk],
+            ),
+            user,
+            **kwargs
+        )
 
     @classmethod
     @safe_db_query
-    def create(self, payload, user, **kwargs):
-        cluster_type = self.verify_project()
+    def create(cls, payload, user, **kwargs):
+        cluster_type = cls.verify_project()
         if not cluster_type:
             cluster_type = payload.get('cluster_type')
 
@@ -211,15 +215,15 @@ class WorkspaceResource(GenericResource):
             raise ApiError(error)
 
         if project_type == ProjectType.MAIN and \
-                project_uuid is not None and \
-                REQUIRE_USER_AUTHENTICATION:
+                    project_uuid is not None and \
+                    REQUIRE_USER_AUTHENTICATION:
             Role.create_default_roles(
                 entity=Permission.Entity.PROJECT,
                 entity_id=project_uuid,
                 prefix=workspace_name,
             )
 
-        return self(dict(success=True), user, **kwargs)
+        return cls(dict(success=True), user, **kwargs)
 
     def update(self, payload, **kwargs):
         cluster_type = self.model.get('cluster_type')
@@ -284,7 +288,7 @@ class WorkspaceResource(GenericResource):
         return self
 
     @classmethod
-    def verify_project(self, subproject: str = None) -> str:
+    def verify_project(cls, subproject: str = None) -> str:
         project_type = get_project_type()
         if project_type != ProjectType.MAIN and os.getenv(MANAGE_ENV_VAR) != '1':
             error = ApiError.RESOURCE_ERROR.copy()
@@ -304,7 +308,7 @@ class WorkspaceResource(GenericResource):
             return get_repo_config().cluster_type
 
     @classmethod
-    def get_instances(self, cluster_type: str) -> List[Dict]:
+    def get_instances(cls, cluster_type: str) -> List[Dict]:
         instances = []
         if cluster_type == ClusterType.K8S:
             from mage_ai.cluster_manager.kubernetes.workload_manager import (

@@ -98,7 +98,7 @@ class JobManager():
             volume_mounts=mage_server_container_spec.volume_mounts,
         )
         if k8s_config and (k8s_config.resource_limits or k8s_config.resource_requests):
-            resource_kwargs = dict()
+            resource_kwargs = {}
             if k8s_config.resource_limits:
                 resource_kwargs['limits'] = k8s_config.resource_limits
             if k8s_config.resource_requests:
@@ -122,21 +122,19 @@ class JobManager():
         )
         # Create the specification of deployment
         spec = client.V1JobSpec(template=template, backoff_limit=0)
-        # Instantiate the job object
-        job = client.V1Job(
+        return client.V1Job(
             api_version=self.api_version,
             kind='Job',
             metadata=client.V1ObjectMeta(name=self.job_name),
-            spec=spec)
-
-        return job
+            spec=spec,
+        )
 
     def create_job(self, job):
         api_response = self.batch_api_client.create_namespaced_job(
             body=job,
             namespace=self.namespace,
         )
-        self._print("Job created. status='%s'" % str(api_response.status))
+        self._print(f"Job created. status='{str(api_response.status)}'")
 
     def delete_job(self):
         api_response = self.batch_api_client.delete_namespaced_job(
@@ -145,7 +143,7 @@ class JobManager():
             body=client.V1DeleteOptions(
                 propagation_policy='Foreground',
                 grace_period_seconds=0))
-        self._print("Job deleted. status='%s'" % str(api_response.status))
+        self._print(f"Job deleted. status='{str(api_response.status)}'")
 
     def job_exists(self):
         try:

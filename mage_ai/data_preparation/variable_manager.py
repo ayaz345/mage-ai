@@ -25,19 +25,12 @@ import pandas as pd
 class VariableManager:
     def __init__(self, repo_path=None, variables_dir=None):
         self.repo_path = repo_path or get_repo_path()
-        if variables_dir is None:
-            self.variables_dir = self.repo_path
-        else:
-            self.variables_dir = variables_dir
+        self.variables_dir = self.repo_path if variables_dir is None else variables_dir
         self.storage = LocalStorage()
         # TODO: implement caching logic
 
     @classmethod
-    def get_manager(
-        self,
-        repo_path: str = None,
-        variables_dir: str = None,
-    ) -> 'VariableManager':
+    def get_manager(cls, repo_path: str = None, variables_dir: str = None) -> 'VariableManager':
         manager_args = dict(
             repo_path=repo_path,
             variables_dir=variables_dir,
@@ -213,9 +206,9 @@ class VariableManager:
         pipeline = Pipeline.get(pipeline_uuid, repo_path=self.repo_path)
         variable_dir_path = os.path.join(self.__pipeline_path(pipeline_uuid), VARIABLE_DIR)
         if not self.storage.path_exists(variable_dir_path):
-            return dict()
+            return {}
         block_dirs = self.storage.listdir(variable_dir_path)
-        variables_by_block = dict()
+        variables_by_block = {}
         for d in block_dirs:
             if not pipeline.has_block(d) and d != 'global':
                 continue
@@ -277,18 +270,16 @@ def get_global_variables(
     from mage_ai.data_preparation.models.pipeline import Pipeline
     pipeline = Pipeline.get(pipeline_uuid)
     if pipeline.variables is not None:
-        global_variables = pipeline.variables
-    else:
-        variables_dir = get_variables_dir()
-        variables = VariableManager(variables_dir=variables_dir).get_variables_by_block(
-            pipeline_uuid,
-            'global',
-        )
-        global_variables = dict()
-        for variable in variables:
-            global_variables[variable] = get_global_variable(pipeline_uuid, variable)
-
-    return global_variables
+        return pipeline.variables
+    variables_dir = get_variables_dir()
+    variables = VariableManager(variables_dir=variables_dir).get_variables_by_block(
+        pipeline_uuid,
+        'global',
+    )
+    return {
+        variable: get_global_variable(pipeline_uuid, variable)
+        for variable in variables
+    }
 
 
 def get_global_variable(

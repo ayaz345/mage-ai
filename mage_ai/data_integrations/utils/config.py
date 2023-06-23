@@ -134,7 +134,7 @@ def interpolate_variables_for_block_settings(
 
 
 def interpolate_string(text: str, variables: Dict) -> str:
-    variables = dict() if variables is None else variables
+    variables = {} if variables is None else variables
     kwargs = dict(
         variables=lambda x: variables.get(x),
         n_days_ago=n_days_ago,

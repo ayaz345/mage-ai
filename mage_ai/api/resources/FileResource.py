@@ -11,16 +11,14 @@ import urllib.parse
 class FileResource(GenericResource):
     @classmethod
     @safe_db_query
-    def collection(self, query, meta, user, **kwargs):
-        return self.build_result_set(
-            [File.get_all_files(get_repo_path())],
-            user,
-            **kwargs,
+    def collection(cls, query, meta, user, **kwargs):
+        return cls.build_result_set(
+            [File.get_all_files(get_repo_path())], user, **kwargs
         )
 
     @classmethod
     @safe_db_query
-    def create(self, payload: Dict, user, **kwargs) -> 'FileResource':
+    def create(cls, payload: Dict, user, **kwargs) -> 'FileResource':
         dir_path = payload['dir_path']
         repo_path = get_repo_path()
         content = None
@@ -41,7 +39,7 @@ class FileResource(GenericResource):
                 overwrite=payload.get('overwrite', False),
             )
 
-            return self(file, user, **kwargs)
+            return cls(file, user, **kwargs)
         except FileExistsError as err:
             error = ApiError.RESOURCE_INVALID.copy()
             error.update(dict(message=str(err)))
@@ -49,18 +47,18 @@ class FileResource(GenericResource):
 
     @classmethod
     @safe_db_query
-    def member(self, pk, user, **kwargs):
-        file = self.get_model(pk)
+    def member(cls, pk, user, **kwargs):
+        file = cls.get_model(pk)
         if not file.exists():
             error = ApiError.RESOURCE_NOT_FOUND.copy()
             error.update(message=f'File at {pk} cannot be found.')
             raise ApiError(error)
 
-        return self(file, user, **kwargs)
+        return cls(file, user, **kwargs)
 
     @classmethod
     @safe_db_query
-    def get_model(self, pk):
+    def get_model(cls, pk):
         file_path = urllib.parse.unquote(pk)
         return File.from_path(file_path, get_repo_path())
 

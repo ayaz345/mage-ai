@@ -8,7 +8,7 @@ import os
 
 class GitFileResource(GenericResource):
     @classmethod
-    async def member(self, pk, user, **kwargs):
+    async def member(cls, pk, user, **kwargs):
         repo_name = get_repo_name()
 
         file_path = urllib.parse.unquote(pk)
@@ -53,11 +53,15 @@ class GitFileResource(GenericResource):
             except git.exc.GitCommandError as err:
                 error = str(err)
 
-        return self(dict(
-            content=file.content(),
-            content_from_base=content_from_base,
-            content_from_compare=content_from_compare,
-            error=error,
-            filename=file_path,
-            modified=is_modified,
-        ), user, **kwargs)
+        return cls(
+            dict(
+                content=file.content(),
+                content_from_base=content_from_base,
+                content_from_compare=content_from_compare,
+                error=error,
+                filename=file_path,
+                modified=is_modified,
+            ),
+            user,
+            **kwargs
+        )

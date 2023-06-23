@@ -109,7 +109,7 @@ class StreamingPipelineExecutor(PipelineExecutor):
             ),
         )
 
-        sinks_by_uuid = dict()
+        sinks_by_uuid = {}
         for sink_block in self.sink_blocks:
             sinks_by_uuid[sink_block.uuid] = SinkFactory.get_sink(
                 self.__interpolate_vars(sink_block.content),
@@ -143,9 +143,9 @@ class StreamingPipelineExecutor(PipelineExecutor):
                     )
                     if build_block_output_stdout:
                         execute_block_kwargs['build_block_output_stdout'] = \
-                            build_block_output_stdout
+                                build_block_output_stdout
                     outputs_by_block[downstream_block.uuid] = \
-                        downstream_block.execute_block(
+                            downstream_block.execute_block(
                             **execute_block_kwargs,
                     )['output']
                 elif downstream_block.type == BlockType.DATA_EXPORTER:
@@ -161,13 +161,13 @@ class StreamingPipelineExecutor(PipelineExecutor):
         def handle_batch_events(messages: List[Union[Dict, str]], **kwargs):
             # Handle the events with DFS
 
-            outputs_by_block = dict()
+            outputs_by_block = {}
             outputs_by_block[self.source_block.uuid] = messages
 
             handle_batch_events_recursively(self.source_block, outputs_by_block, **kwargs)
 
         async def handle_event_async(message, **kwargs):
-            outputs_by_block = dict()
+            outputs_by_block = {}
             outputs_by_block[self.source_block.uuid] = [message]
 
             handle_batch_events_recursively(self.source_block, outputs_by_block, **kwargs)

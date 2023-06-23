@@ -35,23 +35,24 @@ class Redshift(BaseSQL):
         Opens a connection to the Redshift cluster.
         """
         with self.printer.print_msg('Connecting to Redshift cluster'):
-            connect_options = {}
-            for key in [
-                'access_key_id',
-                'cluster_identifier',
-                'database',
-                'db_user',
-                'host',
-                'iam',
-                'password',
-                'port',
-                'profile',
-                'region',
-                'secret_access_key',
-                'user',
-            ]:
-                if self.settings.get(key):
-                    connect_options[key] = self.settings[key]
+            connect_options = {
+                key: self.settings[key]
+                for key in [
+                    'access_key_id',
+                    'cluster_identifier',
+                    'database',
+                    'db_user',
+                    'host',
+                    'iam',
+                    'password',
+                    'port',
+                    'profile',
+                    'region',
+                    'secret_access_key',
+                    'user',
+                ]
+                if self.settings.get(key)
+            }
             warnings.filterwarnings('ignore', category=DeprecationWarning)
             self._ctx = connect(**connect_options)
 
@@ -115,8 +116,7 @@ class Redshift(BaseSQL):
         except Exception as e:
             try:
                 raw_string = str(e).replace('"', '\\"').replace("'", '"')
-                error_message = json.loads(raw_string).get('M')
-                if error_message:
+                if error_message := json.loads(raw_string).get('M'):
                     print(f'\n\nError: {error_message}')
                 else:
                     raise e

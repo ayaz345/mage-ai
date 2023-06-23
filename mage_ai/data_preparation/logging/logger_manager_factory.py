@@ -5,11 +5,7 @@ from mage_ai.data_preparation.repo_manager import RepoConfig
 
 class LoggerManagerFactory:
     @classmethod
-    def get_logger_manager(
-        self,
-        repo_config: RepoConfig = None,
-        **kwargs,
-    ):
+    def get_logger_manager(cls, repo_config: RepoConfig = None, **kwargs):
         if repo_config is not None and repo_config.logging_config is not None:
             logger_type = repo_config.logging_config.get('type')
             if logger_type == LoggerType.S3:

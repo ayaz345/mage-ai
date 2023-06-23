@@ -91,22 +91,23 @@ class Worker(mp.Process):
             )
 
     def run(self):
-        if not self.queue.empty():
-            args = self.queue.get()
+        if self.queue.empty():
+            return
+        args = self.queue.get()
 
-            job_id = args[0]
-            print(f'Run worker for job {job_id}')
-            if self.job_dict[job_id] != JobStatus.QUEUED:
-                return
-            self.job_dict[job_id] = self.pid
-            try:
-                start_session_and_run(args[1], *args[2], **args[3])
-            except Exception as e:
-                if self.dsn:
-                    capture_exception(e)
-                raise
-            finally:
-                self.job_dict[job_id] = JobStatus.COMPLETED
+        job_id = args[0]
+        print(f'Run worker for job {job_id}')
+        if self.job_dict[job_id] != JobStatus.QUEUED:
+            return
+        self.job_dict[job_id] = self.pid
+        try:
+            start_session_and_run(args[1], *args[2], **args[3])
+        except Exception as e:
+            if self.dsn:
+                capture_exception(e)
+            raise
+        finally:
+            self.job_dict[job_id] = JobStatus.COMPLETED
 
 
 def poll_job_and_execute(queue, size, job_dict):

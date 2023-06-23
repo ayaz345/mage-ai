@@ -54,12 +54,7 @@ def parse_attributes(block) -> Dict:
     project_folder_name = path_parts[0]
     filename = path_parts[-1]
 
-    first_folder_name = None
-    if len(path_parts) >= 3:
-        # e.g. demo_project/models/users.sql will be
-        # ['demo_project', 'models', 'users.sql']
-        first_folder_name = path_parts[1]
-
+    first_folder_name = path_parts[1] if len(path_parts) >= 3 else None
     model_name = None
     file_extension = None
 
@@ -68,13 +63,8 @@ def parse_attributes(block) -> Dict:
         model_name = '.'.join(parts[:-1])
         file_extension = parts[-1]
 
-    # Check the model SQL file content for a config with an alias value. If it exists,
-    # use that alias value as the table name instead of the model’s name.
-    table_name = model_name
     config = model_config(block.content)
-    if config.get('alias'):
-        table_name = config['alias']
-
+    table_name = config['alias'] if config.get('alias') else model_name
     full_path = os.path.join(get_repo_path(), 'dbt', file_path)
 
     project_full_path = os.path.join(get_repo_path(), 'dbt', project_folder_name)
@@ -168,9 +158,9 @@ def add_blocks_upstream_from_refs(
         filename = file_path.split(os.sep)[-1]
         parts = filename.split('.')
         if len(parts) >= 2:
-            fn = '.'.join(parts[:-1])
             file_extension = parts[-1]
-            if 'sql' == file_extension:
+            if file_extension == 'sql':
+                fn = '.'.join(parts[:-1])
                 files_by_name[fn] = file_path_orig
 
     current_upstream_blocks = []
@@ -217,9 +207,7 @@ def add_blocks_upstream_from_refs(
         current_upstream_blocks.append(new_block)
 
     if add_current_block:
-        arr = []
-        for b in current_upstream_blocks:
-            arr.append(b)
+        arr = list(current_upstream_blocks)
         block.upstream_blocks = arr
         added_blocks.append(block)
 
@@ -332,8 +320,9 @@ def add_table_to_source(block: 'Block', settings: Dict, source_name: str, table_
     )
 
     if settings:
-        source = find(lambda x: x['name'] == source_name, settings.get('sources', []))
-        if source:
+        if source := find(
+            lambda x: x['name'] == source_name, settings.get('sources', [])
+        ):
             if not source.get('tables'):
                 source['tables'] = []
             if table_name not in [x['name'] for x in source['tables']]:
@@ -636,7 +625,7 @@ def create_upstream_tables(
     cache_upstream_dbt_models: bool = False,
     **kwargs,
 ) -> None:
-    if len([b for b in block.upstream_blocks if BlockType.SENSOR != b.type]) == 0:
+    if not [b for b in block.upstream_blocks if BlockType.SENSOR != b.type]:
         return
 
     config_file_loader, configuration = config_file_loader_and_configuration(
@@ -998,12 +987,10 @@ def build_command_line_arguments(
                 os.remove(path)
 
         if runtime_configuration:
-            prefix = runtime_configuration.get('prefix')
-            if prefix:
+            if prefix := runtime_configuration.get('prefix'):
                 path_to_model = f'{prefix}{path_to_model}'
 
-            suffix = runtime_configuration.get('suffix')
-            if suffix:
+            if suffix := runtime_configuration.get('suffix'):
                 path_to_model = f'{path_to_model}{suffix}'
 
         args += [
@@ -1176,11 +1163,10 @@ def run_dbt_tests(
 
     with redirect_stdout(stdout):
         lines = proc1.stdout.decode().split('\n')
-        for idx, line in enumerate(lines):
+        for line in lines:
             print(line)
 
-            match = re.search('ERROR=([0-9]+)', line)
-            if match:
+            if match := re.search('ERROR=([0-9]+)', line):
                 number_of_errors += int(match.groups()[0])
 
     try:
@@ -1245,17 +1231,17 @@ def fetch_model_data(
     # If the model SQL file contains a config with schema, change the schema to use that.
     # https://docs.getdbt.com/reference/resource-configs/schema
     config = model_config(block.content)
-    config_schema = config.get('schema')
-    if config_schema:
+    if config_schema := config.get('schema'):
         schema = f'{schema}_{config_schema}'
     else:
-        # settings from the dbt_project.yml
-        model_configurations = get_model_configurations_from_dbt_project_settings(block)
-        model_configuration_schema = None
-        if model_configurations:
-            model_configuration_schema = (model_configurations.get('schema') or
-                                          model_configurations.get('+schema'))
-
+        if model_configurations := get_model_configurations_from_dbt_project_settings(
+            block
+        ):
+            model_configuration_schema = model_configurations.get(
+                'schema'
+            ) or model_configurations.get('+schema')
+        else:
+            model_configuration_schema = None
         if model_configuration_schema:
             schema = f"{schema}_{model_configuration_schema}"
 

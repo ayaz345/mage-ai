@@ -34,9 +34,8 @@ class CustomLabelEncoder(BaseEstimator):
 
         def _build(x):
             v = class_mappings.get(str(x))
-            if v is None:
-                return missing_value
-            return v
+            return missing_value if v is None else v
+
         if unknown_found:
             # TODO(christhetree): why are these multiplied by 2?
             if np.issubdtype(X.dtype, np.floating):

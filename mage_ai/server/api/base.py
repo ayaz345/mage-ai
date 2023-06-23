@@ -74,7 +74,7 @@ class BaseHandler(tornado.web.RequestHandler):
         self.write({key: model.to_dict(**kwargs)})
 
     def write_models(self, models):
-        key = camel_to_snake_case(self.model_class.__name__) + 's'
+        key = f'{camel_to_snake_case(self.model_class.__name__)}s'
         self.write({key: [m.to_dict() for m in models]})
 
     def get_payload(self):
@@ -83,8 +83,7 @@ class BaseHandler(tornado.web.RequestHandler):
             key = camel_to_snake_case(self.model_class.__name__)
 
         payload = {}
-        body = self.request.body
-        if body:
+        if body := self.request.body:
             payload = json.loads(self.request.body)
             if key != '':
                 payload = payload.get(key, {})

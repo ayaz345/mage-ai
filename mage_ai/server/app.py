@@ -111,11 +111,7 @@ def process():
     df = feature_set.data
     metadata = feature_set.metadata
 
-    if request_data.get('clean', True):
-        result = clean_data(df)
-    else:
-        result = analyze(df)
-
+    result = clean_data(df) if request_data.get('clean', True) else analyze(df)
     feature_set.write_files(result)
 
     column_types = result['column_types']
@@ -123,12 +119,11 @@ def process():
 
     feature_set.metadata = metadata
 
-    response = app.response_class(
+    return app.response_class(
         response=simplejson.dumps(feature_set.to_dict(), ignore_nan=True),
         status=200,
         mimetype='application/json',
     )
-    return response
 
 
 @app.route('/feature_sets', endpoint='feature_sets')
@@ -146,14 +141,13 @@ def feature_sets():
     valid_feature_sets = [
         f
         for f in feature_sets
-        if set(['column_types', 'statistics']).issubset(f['metadata'].keys())
+        if {'column_types', 'statistics'}.issubset(f['metadata'].keys())
     ]
-    response = app.response_class(
+    return app.response_class(
         response=simplejson.dumps(valid_feature_sets, ignore_nan=True),
         status=200,
         mimetype='application/json',
     )
-    return response
 
 
 @app.route('/feature_sets/<id>', endpoint='feature_sets_get')
@@ -170,12 +164,11 @@ def feature_set(id):
     if not FeatureSet.is_valid_id(id):
         raise RuntimeError(f'Unknown feature set id: {id}')
     feature_set = FeatureSet(id=id)
-    response = app.response_class(
+    return app.response_class(
         response=simplejson.dumps(feature_set.to_dict(), ignore_nan=True),
         status=200,
         mimetype='application/json',
     )
-    return response
 
 
 @app.route('/feature_sets/<id>/downloads/', endpoint='feature_set_download', methods=['POST'])
@@ -212,12 +205,13 @@ def feature_set_version(id, version):
     if not FeatureSet.is_valid_id(id):
         raise RuntimeError(f'Unknown feature set id: {id}')
     feature_set = FeatureSet(id=id)
-    response = app.response_class(
-        response=simplejson.dumps(feature_set.to_dict(version=version), ignore_nan=True),
+    return app.response_class(
+        response=simplejson.dumps(
+            feature_set.to_dict(version=version), ignore_nan=True
+        ),
         status=200,
         mimetype='application/json',
     )
-    return response
 
 
 @app.route('/feature_sets/<id>', methods=['PUT'], endpoint='feature_sets_put')
@@ -244,12 +238,11 @@ def update_feature_set(id):
     request_data = request.json
     feature_set = FeatureSet(id=id)
     feature_set.write_files(request_data)
-    response = app.response_class(
+    return app.response_class(
         response=simplejson.dumps(feature_set.to_dict(), ignore_nan=True),
         status=200,
         mimetype='application/json',
     )
-    return response
 
 
 @app.route('/pipelines', endpoint='pipelines')
@@ -264,14 +257,15 @@ def pipelines():
     ]
     """
     pipelines = list(map(lambda p: p.to_dict(detailed=False), Pipeline.objects()))
-    response = app.response_class(
+    return app.response_class(
         response=simplejson.dumps(
             pipelines,
             default=encode_complex,
             ignore_nan=True,
-        ), status=200, mimetype='application/json'
+        ),
+        status=200,
+        mimetype='application/json',
     )
-    return response
 
 
 @app.route('/pipelines/<id>', endpoint='pipelines_get')
@@ -286,7 +280,7 @@ def pipeline(id):
     if not Pipeline.is_valid_id(id):
         raise RuntimeError(f'Unknown pipeline id: {id}')
     pipeline = Pipeline(id=id)
-    response = app.response_class(
+    return app.response_class(
         response=simplejson.dumps(
             pipeline.to_dict(),
             default=encode_complex,
@@ -295,7 +289,6 @@ def pipeline(id):
         status=200,
         mimetype='application/json',
     )
-    return response
 
 
 @app.route('/pipelines/<id>', methods=['PUT'], endpoint='pipelines_put')
@@ -341,7 +334,7 @@ def update_pipeline(id):
     if api_key is not None:
         pipeline.sync_pipeline(api_key)
 
-    response = app.response_class(
+    return app.response_class(
         response=simplejson.dumps(
             pipeline.to_dict(),
             default=encode_complex,
@@ -350,7 +343,6 @@ def update_pipeline(id):
         status=200,
         mimetype='application/json',
     )
-    return response
 
 
 @app.route('/status')
@@ -422,14 +414,11 @@ class ThreadWithTrace(threading.Thread):
         self.run = self.__run_backup
 
     def globaltrace(self, frame, event, arg):
-        if event == 'call':
-            return self.localtrace
-        else:
-            return None
+        return self.localtrace if event == 'call' else None
 
     def localtrace(self, frame, event, arg):
-        if self.killed:
-            if event == 'line':
+        if event == 'line':
+            if self.killed:
                 raise SystemExit()
         return self.localtrace
 

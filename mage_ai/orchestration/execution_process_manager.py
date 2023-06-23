@@ -4,8 +4,8 @@ import multiprocessing
 
 class ExecutionProcessManager:
     def __init__(self):
-        self.block_processes = dict()
-        self.pipeline_processes = dict()
+        self.block_processes = {}
+        self.pipeline_processes = {}
 
     def has_pipeline_process(self, pipeline_run_id: int):
         return (
@@ -43,7 +43,7 @@ class ExecutionProcessManager:
     ):
         self.terminate_block_process(pipeline_run_id, block_run_id)
         if pipeline_run_id not in self.block_processes:
-            self.block_processes[pipeline_run_id] = dict()
+            self.block_processes[pipeline_run_id] = {}
         self.block_processes[pipeline_run_id][block_run_id] = proc
 
     def terminate_block_process(self, pipeline_run_id: int, block_run_id: int) -> None:
@@ -61,17 +61,14 @@ class ExecutionProcessManager:
                 continue
             # TODO: Improve perf by batch fetching the pipeline runs
             pipeline_run = PipelineRun.query.get(pipeline_run_id)
-            if pipeline_run.status == PipelineRun.PipelineRunStatus.CANCELLED:
-                for block_run_id in list(block_run_procs.keys()):
-                    proc = block_run_procs[block_run_id]
+            for block_run_id in list(block_run_procs.keys()):
+                proc = block_run_procs[block_run_id]
+                if pipeline_run.status == PipelineRun.PipelineRunStatus.CANCELLED:
                     if proc.is_alive():
                         proc.terminate()
                     del block_run_procs[block_run_id]
-            else:
-                for block_run_id in list(block_run_procs.keys()):
-                    proc = block_run_procs[block_run_id]
-                    if proc and hasattr(proc, 'is_alive') and not proc.is_alive():
-                        del block_run_procs[block_run_id]
+                elif proc and hasattr(proc, 'is_alive') and not proc.is_alive():
+                    del block_run_procs[block_run_id]
             if not block_run_procs:
                 del self.block_processes[pipeline_run_id]
 

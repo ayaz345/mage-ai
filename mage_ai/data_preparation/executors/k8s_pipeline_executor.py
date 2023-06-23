@@ -27,8 +27,8 @@ class K8sPipelineExecutor(PipelineExecutor):
         **kwargs,
     ) -> None:
         cmd = f'/app/run_app.sh '\
-              f'python mage_ai/cli/main.py run {self.pipeline.repo_config.repo_path} '\
-              f'{self.pipeline.uuid}'
+                  f'python mage_ai/cli/main.py run {self.pipeline.repo_config.repo_path} '\
+                  f'{self.pipeline.uuid}'
         options = [
             '--executor-type local_python',
         ]
@@ -40,6 +40,6 @@ class K8sPipelineExecutor(PipelineExecutor):
         job_manager = K8sJobManager(
             job_name=f'mage-data-prep-pipeline-{pipeline_run_id}',
             logger=self.logger,
-            logging_tags=kwargs.get('tags', dict()),
+            logging_tags=kwargs.get('tags', {}),
         )
         job_manager.run_job(f'{cmd} {options_str}')

@@ -86,8 +86,8 @@ def check_pipeline_run_status(
         status = pipeline_run.status.value
         message = f'Pipeline run {pipeline_run.id} for pipeline {pipeline_uuid}: {status}.'
 
-        if PipelineRun.PipelineRunStatus.FAILED.value == status:
-            if error_on_failure:
+        if error_on_failure:
+            if PipelineRun.PipelineRunStatus.FAILED.value == status:
                 raise Exception(message)
 
         if verbose:

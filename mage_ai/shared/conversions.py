@@ -27,12 +27,11 @@ def df_to_fd(x, copy=False, nan_str='null', dtype=None):
     """
     assert isinstance(x, pd.DataFrame), 'input must be a Pandas DataFrame'
 
-    # Find NaN values in object type columns
-    nan_indices = {}
-    for feat in x:
-        if x[feat].dtype == np.dtype('O'):
-            nan_indices[feat] = np.where(x[feat].isna().values)[0]
-
+    nan_indices = {
+        feat: np.where(x[feat].isna().values)[0]
+        for feat in x
+        if x[feat].dtype == np.dtype('O')
+    }
     if dtype and not copy:
         copy = True
     if copy:
@@ -42,20 +41,13 @@ def df_to_fd(x, copy=False, nan_str='null', dtype=None):
                     list(x)
                 ), 'dtypes must be same length as there are features in DataFrame'
                 out = OrderedDict((f, x[f].values.astype(dtype[i])) for i, f in enumerate(list(x)))
-                for feat in nan_indices:
-                    out[feat][nan_indices[feat]] = nan_str
-                return out
             else:
                 out = OrderedDict((f, x[f].values.astype(dtype)) for f in list(x))
-                for feat in nan_indices:
-                    out[feat][nan_indices[feat]] = nan_str
-                return out
         else:
             out = OrderedDict((f, x[f].values.copy()) for f in list(x))
-            for feat in nan_indices:
-                out[feat][nan_indices[feat]] = nan_str
-            return out
-
+        for feat in nan_indices:
+            out[feat][nan_indices[feat]] = nan_str
+        return out
     out = OrderedDict((f, x[f].values.view()) for f in list(x))
     for feat in nan_indices:
         try:
@@ -116,7 +108,7 @@ def np_to_fd(x, axes=None, feature_names=None, copy=True, dtype=None):
     cols = (
         feature_names
         if feature_names
-        else ['c' + str(i) for i in six.moves.xrange(view_t.shape[0])]
+        else [f'c{str(i)}' for i in six.moves.xrange(view_t.shape[0])]
     )
     return OrderedDict((cols[i], view_t[i]) for i in six.moves.xrange(view_t.shape[0]))
 
@@ -128,10 +120,7 @@ def sparse_to_dense(x):
     :param x: The input
     :return: A dense numpy array
     """
-    if isinstance(x, scipy.sparse.csr_matrix):
-        return x.todense()
-    else:
-        return x
+    return x.todense() if isinstance(x, scipy.sparse.csr_matrix) else x
 
 
 def as_scalar(x, str_encoding='utf-8'):
@@ -159,7 +148,7 @@ def as_scalar(x, str_encoding='utf-8'):
     elif isinstance(x, (np.string_, np.bytes_)):
         return x.item().decode(str_encoding)
     else:
-        raise ValueError('Unknown type {}'.format(str(type(x))))
+        raise ValueError(f'Unknown type {str(type(x))}')
 
 
 def fd_to_np(x, method='column_stack', axis=None, dtype=None):
@@ -181,10 +170,7 @@ def fd_to_np(x, method='column_stack', axis=None, dtype=None):
     # passthrough if a feature
     if len(x) == 1:
         k = list(x.keys())[0]
-        if dtype:
-            return sparse_to_dense(x[k]).astype(dtype)
-        return x[k]
-
+        return sparse_to_dense(x[k]).astype(dtype) if dtype else x[k]
     feature_names = list(x.keys())
 
     # shape of first feature
@@ -201,15 +187,13 @@ def fd_to_np(x, method='column_stack', axis=None, dtype=None):
             x[feature] = sparse_to_dense(x[feature])
         else:
             raise ValueError(
-                'Unsupported container tensor type in feature dict: {}'.format(
-                    str(type(x[feature]))
-                )
+                f'Unsupported container tensor type in feature dict: {str(type(x[feature]))}'
             )
         if first_shape is None:
             first_shape = x[feature].shape
-        assert first_shape[0] == x[feature].shape[0], 'incompatible shapes: {}, {}'.format(
-            first_shape, x[feature].shape
-        )
+        assert (
+            first_shape[0] == x[feature].shape[0]
+        ), f'incompatible shapes: {first_shape}, {x[feature].shape}'
     if method == 'column_stack':
         out = np.column_stack([(x[key]) for key in x])
     elif method == 'stack':
@@ -218,10 +202,8 @@ def fd_to_np(x, method='column_stack', axis=None, dtype=None):
         else:
             out = np.stack([(x[key]) for key in x], axis=-2)
     else:
-        raise ValueError('unsupported method {}'.format(method))
-    if dtype:
-        return out.astype(dtype)
-    return out
+        raise ValueError(f'unsupported method {method}')
+    return out.astype(dtype) if dtype else out
 
 
 def fd_to_df(x):
@@ -259,17 +241,14 @@ def cast_fd(x, dtype, order='C'):
     """
     o = OrderedDict()
     for feat in x:
-        if not isinstance(x[feat], np.ndarray):
-            if isinstance(x[feat], list):
-                o[feat] = np.array(x[feat]).astype(dtype=dtype, order=order)
-            else:
-                raise ValueError(
-                    'Can only cast lists or numpy arrays. Key {} is of type {}'.format(
-                        feat, str(type(x[feat]))
-                    )
-                )
-        else:
+        if isinstance(x[feat], np.ndarray):
             o[feat] = x[feat].astype(dtype=dtype, order=order)
+        elif isinstance(x[feat], list):
+            o[feat] = np.array(x[feat]).astype(dtype=dtype, order=order)
+        else:
+            raise ValueError(
+                f'Can only cast lists or numpy arrays. Key {feat} is of type {str(type(x[feat]))}'
+            )
     return o
 
 
@@ -298,7 +277,7 @@ def to_fd(x, dtype=None):
                 return cast_fd(x, dtype)
         return OrderedDict((key, x[key]) for key in x)
     else:
-        raise NotImplementedError('unknown type {}'.format(str(type(x))))
+        raise NotImplementedError(f'unknown type {str(type(x))}')
 
 
 def to_list(feature):

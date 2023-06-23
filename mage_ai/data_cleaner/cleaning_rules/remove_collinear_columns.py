@@ -39,12 +39,11 @@ class RemoveCollinearColumns(BaseRule):
             i = collinearity.argmax()
             if i == 0 and collinearity[0] == 0:
                 break
-            else:
-                C = np.delete(C, i, axis=0)
-                C = np.delete(C, i, axis=1)
-                collinear_columns.append(good_columns.pop(i))
+            C = np.delete(C, i, axis=0)
+            C = np.delete(C, i, axis=1)
+            collinear_columns.append(good_columns.pop(i))
 
-        if len(collinear_columns) != 0:
+        if collinear_columns:
             suggestions.append(
                 self._build_transformer_action_suggestion(
                     'Remove collinear columns',

@@ -51,10 +51,10 @@ class BaseModel(Base):
     )
 
     @classmethod
-    def create(self, **kwargs):
+    def create(cls, **kwargs):
         commit = kwargs.get('commit', True)
         kwargs.pop('commit', None)
-        model = self(**kwargs)
+        model = cls(**kwargs)
         model.save(commit=commit)
         return model
 
@@ -63,8 +63,8 @@ class BaseModel(Base):
 
     @classmethod
     @safe_db_query
-    def get(self, uuid):
-        return self.query.get(uuid)
+    def get(cls, uuid):
+        return cls.query.get(uuid)
 
     def save(self, commit=True) -> None:
         self.session.add(self)

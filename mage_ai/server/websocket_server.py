@@ -183,24 +183,24 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
             valid = not REQUIRE_USER_AUTHENTICATION
 
             if api_key and token:
-                oauth_client = Oauth2Application.query.filter(
+                if oauth_client := Oauth2Application.query.filter(
                     Oauth2Application.client_id == api_key,
-                ).first()
-                if oauth_client:
+                ).first():
                     oauth_token, valid = authenticate_client_and_token(oauth_client.id, token)
                     if valid and oauth_token and oauth_token.user:
-                        if pipeline_uuid:
-                            valid = has_at_least_editor_role(
+                        valid = (
+                            has_at_least_editor_role(
                                 oauth_token.user,
                                 Permission.Entity.PIPELINE,
                                 pipeline_uuid,
                             )
-                        else:
-                            valid = has_at_least_editor_role(
+                            if pipeline_uuid
+                            else has_at_least_editor_role(
                                 oauth_token.user,
                                 Permission.Entity.PROJECT,
                                 get_project_uuid(),
                             )
+                        )
             if not valid or DISABLE_NOTEBOOK_EDIT_ACCESS == 1:
                 return self.send_message(
                     dict(
@@ -212,8 +212,7 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
                     ),
                 )
 
-        output = message.get('output')
-        if output:
+        if output := message.get('output'):
             self.send_message(output)
             return
         global_vars = message.get('global_vars')
@@ -236,7 +235,7 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
         global_vars['env'] = ENV_DEV
         if 'execution_date' not in global_vars:
             global_vars['execution_date'] = datetime.now()
-        global_vars['event'] = dict()
+        global_vars['event'] = {}
 
         if cancel_pipeline:
             cancel_pipeline_execution(
@@ -273,13 +272,13 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
     def send_message(self, message: dict) -> None:
         def should_filter_message(message):
             if message.get('data') is None and message.get('error') is None \
-                    and message.get('execution_state') is None and message.get('type') is None:
+                        and message.get('execution_state') is None and message.get('type') is None:
                 return True
 
             try:
                 # Filter out messages meant for jupyter widgets that we can't render
                 if message.get('msg_type') == 'display_data' and \
-                        message.get('data')[0].startswith('FloatProgress'):
+                            message.get('data')[0].startswith('FloatProgress'):
                     return True
             except IndexError:
                 pass
@@ -300,7 +299,7 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
         if msg_id is None:
             return
         if message.get('data') is None and message.get('error') is None \
-           and message.get('execution_state') is None and message.get('type') is None:
+               and message.get('execution_state') is None and message.get('type') is None:
             return
 
         if should_filter_message(message):
@@ -309,8 +308,11 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
         message = filter_out_sensitive_data(message)
 
         execution_metadata = message.get('execution_metadata')
-        msg_id_value = execution_metadata if execution_metadata is not None \
-            else WebSocketServer.running_executions_mapping.get(msg_id, dict())
+        msg_id_value = (
+            execution_metadata
+            if execution_metadata is not None
+            else WebSocketServer.running_executions_mapping.get(msg_id, {})
+        )
         block_type = msg_id_value.get('block_type')
         block_uuid = msg_id_value.get('block_uuid')
         pipeline_uuid = msg_id_value.get('pipeline_uuid')
@@ -397,10 +399,7 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
             )
         else:
             if block is not None and block.type in CUSTOM_EXECUTION_BLOCK_TYPES:
-                if kernel_name == KernelName.PYSPARK and not widget:
-                    remote_execution = True
-                else:
-                    remote_execution = False
+                remote_execution = kernel_name == KernelName.PYSPARK and not widget
                 code = add_execution_code(
                     pipeline_uuid,
                     block_uuid,
@@ -414,7 +413,7 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
                     run_settings=run_settings,
                     run_tests=run_tests,
                     run_upstream=run_upstream,
-                    update_status=False if remote_execution else True,
+                    update_status=not remote_execution,
                     upstream_blocks=upstream_blocks,
                     widget=widget,
                 )
@@ -462,7 +461,7 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
                 kernel_name=kernel_name,
                 pipeline_config=pipeline.to_dict(include_content=True),
                 repo_config=get_repo_config().to_dict(remote=True),
-                update_status=False if kernel_name == KernelName.PYSPARK else True,
+                update_status=kernel_name != KernelName.PYSPARK,
             )
             client = self.init_kernel_client(kernel_name)
             msg_id = client.execute(code)
@@ -524,7 +523,7 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
                             msg_type=msg.get('msg_type'),
                         )
                         if execution_state == 'idle' and \
-                                metadata.get('block_uuid') is None:
+                                    metadata.get('block_uuid') is None:
                             loop = False
                             break
                     await asyncio.sleep(0.5)
@@ -532,12 +531,12 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
             task = asyncio.create_task(check_for_messages())
             set_current_message_task(task)
 
-    def __format_error(error: List[str]) -> List[str]:
+    def __format_error(self) -> List[str]:
         initial_regex = r'.*execute_custom_code\(\).*'
         end_regex = r'.*Block.[_a-z]*\(.*'
         initial_idx = 0
         end_idx = 0
-        for idx, line in enumerate(error):
+        for idx, line in enumerate(self):
             ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
             line_without_ansi = ansi_escape.sub('', line)
             if re.match(initial_regex, line_without_ansi) and not initial_idx:
@@ -547,11 +546,11 @@ class WebSocketServer(tornado.websocket.WebSocketHandler):
 
         try:
             if initial_idx and end_idx:
-                return error[:initial_idx - 1] + error[end_idx + 1:]
+                return self[:initial_idx - 1] + self[end_idx + 1:]
         except Exception:
             pass
 
-        return error
+        return self
 
 
 class StreamBlockOutputToQueue(object):

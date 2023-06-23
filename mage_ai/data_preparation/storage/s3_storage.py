@@ -13,14 +13,12 @@ import simplejson
 
 class S3Storage(BaseStorage):
     def __init__(self, bucket=None, dirpath=None, **kwargs):
-        if bucket is not None:
-            self.client = s3.Client(bucket, **kwargs)
-        else:
+        if bucket is None:
             if dirpath is None or not dirpath.startswith(S3_PREFIX):
                 raise Exception('')
             path_parts = dirpath.replace(S3_PREFIX, '').split('/')
             bucket = path_parts.pop(0)
-            self.client = s3.Client(bucket, **kwargs)
+        self.client = s3.Client(bucket, **kwargs)
 
     def isdir(self, path: str) -> bool:
         if not path.endswith('/'):

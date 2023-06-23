@@ -100,7 +100,7 @@ class BasePipeline:
         return self.create_actions(df_transformed, new_column_types, {})
 
     @classmethod
-    def deduplicate_suggestions(self, actions, suggestions, statistics):
+    def deduplicate_suggestions(cls, actions, suggestions, statistics):
         """
         Not show duplicate outlier removal suggestions due to column value distribution changes.
         TODO: Figure out a better way to detect outliers.

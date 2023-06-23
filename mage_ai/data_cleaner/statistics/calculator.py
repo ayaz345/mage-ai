@@ -45,7 +45,7 @@ class StatisticsCalculator:
 
     @property
     def data_tags(self):
-        return dict()
+        return {}
 
     def process(self, df, df_original=None, is_clean=True):
         return self.calculate_statistics_overview(df, df_original=df_original, is_clean=is_clean)
@@ -98,12 +98,12 @@ class StatisticsCalculator:
             )
 
             arr_args_1 = ([df[col] for col in df.columns],)
-            arr_args_2 = ([col for col in df.columns],)
+            arr_args_2 = (list(df.columns), )
 
             dicts = map(self.statistics_overview, *arr_args_1, *arr_args_2)
 
             for d in dicts:
-                data.update(d)
+                data |= d
 
             # Aggregated stats
             column_count = len(df.columns)
@@ -152,8 +152,8 @@ class StatisticsCalculator:
             timeseries_metadata = self.__evaluate_timeseries(data)
             data.update(timeseries_metadata)
 
-            # object_key = s3_paths.path_statistics_overview(self.object_key_prefix)
-            # s3_data.upload_json_sorted(self.s3_client, object_key, data)
+                # object_key = s3_paths.path_statistics_overview(self.object_key_prefix)
+                # s3_data.upload_json_sorted(self.s3_client, object_key, data)
 
         increment(
             'statistics.calculate_statistics_overview.success',
@@ -163,10 +163,12 @@ class StatisticsCalculator:
         return data
 
     def __evaluate_timeseries(self, data):
-        indices = []
-        for column, dtype in self.column_types.items():
-            if data[f'{column}/null_value_rate'] <= 0.1 and dtype == ColumnType.DATETIME:
-                indices.append(column)
+        indices = [
+            column
+            for column, dtype in self.column_types.items()
+            if data[f'{column}/null_value_rate'] <= 0.1
+            and dtype == ColumnType.DATETIME
+        ]
         return {'is_timeseries': len(indices) != 0, 'timeseries_index': indices}
 
     def __protected_division(self, dividend: float, divisor: float) -> float:

@@ -25,7 +25,7 @@ def remove_comments(code_lines: List[str]) -> List[str]:
 def remove_empty_last_lines(code_lines: List[str]) -> List[str]:
     idx = len(code_lines) - 1
     last_line = code_lines[idx]
-    while idx >= 0 and len(str(last_line).strip()) == 0:
+    while idx >= 0 and not str(last_line).strip():
         idx -= 1
         last_line = code_lines[idx]
     return code_lines[: (idx + 1)]
@@ -85,7 +85,7 @@ def get_content_inside_triple_quotes(parts):
 
 
 def add_internal_output_info(code: str) -> str:
-    if code.startswith('%%sql') or code.startswith('%%bash') or len(code) == 0:
+    if code.startswith('%%sql') or code.startswith('%%bash') or not code:
         return code
     code_lines = remove_comments(code.split('\n'))
     code_lines = remove_empty_last_lines(code_lines)
@@ -100,13 +100,10 @@ def add_internal_output_info(code: str) -> str:
     matches = re.search(r'^[ ]*([^{^(^\[^=^ ]+)[ ]*=[ ]*', last_line)
     if matches:
         # Get the variable name in the last line if the last line is a variable assignment
-        last_line = matches.group(1)
+        last_line = matches[1]
     last_line = last_line.strip()
 
-    is_print_statement = False
-    if re.findall(r'print\(', last_line):
-        is_print_statement = True
-
+    is_print_statement = bool(re.findall(r'print\(', last_line))
     last_line_in_block = False
     if len(code_lines) >= 2:
         if re.search(REGEX_PATTERN, code_lines[-2]) or re.search(REGEX_PATTERN, code_lines[-1]):
@@ -123,13 +120,9 @@ def add_internal_output_info(code: str) -> str:
 
     if not last_line or last_line_in_block or re.match(r'^from|^import|^\%\%', last_line.strip()):
         return code
-    else:
-        if matches:
-            end_index = len(code_lines)
-        else:
-            end_index = -1
-        code_without_last_line = '\n'.join(code_lines[:end_index])
-        internal_output = f"""
+    end_index = len(code_lines) if matches else -1
+    code_without_last_line = '\n'.join(code_lines[:end_index])
+    internal_output = f"""
 # Post processing code below (source: output_display.py)
 
 
@@ -209,11 +202,9 @@ def __custom_output():
 __custom_output()
 """
 
-        custom_code = f"""{code_without_last_line}
+    return f"""{code_without_last_line}
 {internal_output}
 """
-
-        return custom_code
 
 
 def add_execution_code(
@@ -251,9 +242,8 @@ def add_execution_code(
         ):
             magic_header = '%%local'
             run_upstream = False
-        else:
-            if block_type in [BlockType.DATA_LOADER, BlockType.TRANSFORMER]:
-                magic_header = '%%spark -o df --maxrows 10000'
+        elif block_type in [BlockType.DATA_LOADER, BlockType.TRANSFORMER]:
+            magic_header = '%%spark -o df --maxrows 10000'
     elif pipeline_config['type'] == 'databricks':
         spark_session_init = '''
 from pyspark.sql import SparkSession
@@ -276,7 +266,7 @@ db_connection.start_session()
 
 def execute_custom_code():
     block_uuid=\'{block_uuid}\'
-    run_upstream={str(run_upstream)}
+    run_upstream={run_upstream}
     pipeline = Pipeline(
         uuid=\'{pipeline_uuid}\',
         config={pipeline_config},

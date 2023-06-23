@@ -83,10 +83,7 @@ class OutlierRemover(BaseEstimator):
         if ndim > 20:
             X = pca_transformer.fit_transform(X)
         if self.method == 'auto':
-            if ndim <= 5:
-                self.method = 'lof'
-            else:
-                self.method = 'itree'
+            self.method = 'lof' if ndim <= 5 else 'itree'
         if self.method == 'lof':
             if count < 10:
                 n_neighbors = 2

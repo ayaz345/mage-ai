@@ -20,11 +20,7 @@ def build_buckets(min_value, max_value, max_buckets):
 
     is_integer = False
     parts = str(diff).split('.')
-    if len(parts) == 1:
-        is_integer = True
-    else:
-        is_integer = int(parts[1]) == 0
-
+    is_integer = True if len(parts) == 1 else int(parts[1]) == 0
     if is_integer and total_interval <= max_buckets:
         number_of_buckets = int(total_interval)
         bucket_interval = 1
@@ -163,11 +159,8 @@ def build_time_series_buckets(df, datetime_column, time_interval, metrics):
     values = [[] for _ in metrics]
     buckets = []
 
-    while len(buckets) == 0 or buckets[-1] <= max_value_datetime.timestamp():
-        if len(buckets) == 0:
-            min_date_ts = start_datetime.timestamp()
-        else:
-            min_date_ts = buckets[-1]
+    while not buckets or buckets[-1] <= max_value_datetime.timestamp():
+        min_date_ts = start_datetime.timestamp() if not buckets else buckets[-1]
         max_date = datetime.fromtimestamp(min_date_ts) + TIME_INTERVAL_TO_TIME_DELTA[time_interval]
         buckets.append(max_date.timestamp())
 

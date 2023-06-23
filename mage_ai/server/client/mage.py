@@ -56,7 +56,6 @@ class Mage:
                 )
         except Exception:
             logger.exception(error_message)
-            pass
 
     def get_pipeline_actions(self, id, api_key):
         if api_key is None:

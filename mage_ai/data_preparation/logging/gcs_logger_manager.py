@@ -36,13 +36,7 @@ class GCSLoggerManager(LoggerManager):
         pass
 
     def get_log_filepath_prefix(self):
-        return '{}/{}/{}/{}/{}'.format(
-            self.gcs_config.prefix,
-            self.repo_config.repo_name,
-            'pipelines',
-            self.pipeline_uuid,
-            self.partition,
-        )
+        return f'{self.gcs_config.prefix}/{self.repo_config.repo_name}/pipelines/{self.pipeline_uuid}/{self.partition}'
 
     def get_logs(self):
         object_key = self.get_log_filepath()

@@ -6,11 +6,7 @@ DIR_PATH = os.path.abspath(os.path.dirname(__file__))
 
 def list_dataset_names():
     paths = os.listdir(DIR_PATH)
-    dataset_names = []
-    for path in paths:
-        if path.endswith('.csv'):
-            dataset_names.append(path.split('/')[-1])
-    return dataset_names
+    return [path.split('/')[-1] for path in paths if path.endswith('.csv')]
 
 
 def load_dataset(name):

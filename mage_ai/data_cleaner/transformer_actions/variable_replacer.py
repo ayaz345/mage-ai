@@ -20,10 +20,9 @@ def interpolate(text, key, variable_data):
             variable_data[VariableType.FEATURE_SET_VERSION][VariableType.FEATURE_SET]['uuid']
 
     regex_pattern = re.compile(
-        r'\%__BRACKETS_START__{}__BRACKETS_END__'
-        .format(key)
-        .replace('__BRACKETS_START__', r'\{')
-        .replace('__BRACKETS_END__', r'\}')
+        f'\%__BRACKETS_START__{key}__BRACKETS_END__'.replace(
+            '__BRACKETS_START__', r'\{'
+        ).replace('__BRACKETS_END__', r'\}')
     )
 
     return re.sub(regex_pattern, regex_replacement, str(text))

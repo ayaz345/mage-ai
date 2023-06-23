@@ -22,7 +22,7 @@ class BackfillResource(DatabaseResource):
 
     @classmethod
     @safe_db_query
-    def collection(self, query_arg, meta, user, **kwargs):
+    def collection(cls, query_arg, meta, user, **kwargs):
         results = Backfill.query
 
         pipeline_uuid = query_arg.get('pipeline_uuid', [None])
@@ -35,7 +35,7 @@ class BackfillResource(DatabaseResource):
 
     @classmethod
     @safe_db_query
-    def create(self, payload, user, **kwargs):
+    def create(cls, payload, user, **kwargs):
         pipeline_uuid = kwargs['parent_model'].uuid
 
         return super().create(merge_dict(

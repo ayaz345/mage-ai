@@ -65,8 +65,7 @@ def extract_all_imports(file_content, ignore_nesting=False):
 
     if ignore_nesting:
         for regex in base_regexes:
-            regexes.append(f'^{regex}')
-            regexes.append(f'\n{regex}')
+            regexes.extend((f'^{regex}', f'\n{regex}'))
     else:
         regexes += base_regexes
 
@@ -88,8 +87,8 @@ async def build_file_content_mapping(paths, files):
         parts = file_name.split('/')
         module_name = '.'.join(parts).replace('.py', '')
 
-        if '__init__.py' == parts[-1]:
-            path_sub = '/'.join(parts[:len(parts) - 1])
+        if parts[-1] == '__init__.py':
+            path_sub = '/'.join(parts[:-1])
             files += [fn for fn in reduce(add_file, [path_sub], []) if fn != file_name]
             module_name = module_name.replace('.__init__', '')
 

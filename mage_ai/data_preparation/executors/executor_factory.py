@@ -14,18 +14,14 @@ from mage_ai.shared.code import is_pyspark_code
 
 class ExecutorFactory:
     @classmethod
-    def get_default_executor_type(self):
+    def get_default_executor_type(cls):
         executor_type = os.getenv('DEFAULT_EXECUTOR_TYPE', ExecutorType.LOCAL_PYTHON)
         if ExecutorType.is_valid_type(executor_type):
             return executor_type
         return ExecutorType.LOCAL_PYTHON
 
     @classmethod
-    def get_pipeline_executor_type(
-        self,
-        pipeline: Pipeline,
-        executor_type: Union[ExecutorType, str, None] = None,
-    ):
+    def get_pipeline_executor_type(cls, pipeline: Pipeline, executor_type: Union[ExecutorType, str, None] = None):
         if executor_type is None:
             if pipeline.type == PipelineType.PYSPARK:
                 executor_type = ExecutorType.PYSPARK
@@ -33,16 +29,11 @@ class ExecutorFactory:
                 executor_type = pipeline.executor_type
                 if executor_type == ExecutorType.LOCAL_PYTHON or executor_type is None:
                     # Use default executor type
-                    executor_type = self.get_default_executor_type()
+                    executor_type = cls.get_default_executor_type()
         return executor_type
 
     @classmethod
-    def get_pipeline_executor(
-        self,
-        pipeline: Pipeline,
-        execution_partition: Union[str, None] = None,
-        executor_type: Union[ExecutorType, str, None] = None,
-    ) -> PipelineExecutor:
+    def get_pipeline_executor(cls, pipeline: Pipeline, execution_partition: Union[str, None] = None, executor_type: Union[ExecutorType, str, None] = None) -> PipelineExecutor:
         """Get the pipeline executor based on pipeline type or pipeline executor_type.
         If the executor_type is not specified in the method. Infer the executor_type with the
         following rules:
@@ -64,7 +55,9 @@ class ExecutorFactory:
             executor_type (Union[ExecutorType, str, None], optional): If the executor_type is
                 specified. Use this executor_type directly.        """
 
-        executor_type = self.get_pipeline_executor_type(pipeline, executor_type=executor_type)
+        executor_type = cls.get_pipeline_executor_type(
+            pipeline, executor_type=executor_type
+        )
         if executor_type == ExecutorType.PYSPARK:
             from mage_ai.data_preparation.executors.pyspark_pipeline_executor import (
                 PySparkPipelineExecutor,
@@ -86,13 +79,7 @@ class ExecutorFactory:
             return PipelineExecutor(pipeline)
 
     @classmethod
-    def get_block_executor(
-        self,
-        pipeline: Pipeline,
-        block_uuid: str,
-        execution_partition: Union[str, None] = None,
-        executor_type: Union[ExecutorType, str, None] = None,
-    ) -> BlockExecutor:
+    def get_block_executor(cls, pipeline: Pipeline, block_uuid: str, execution_partition: Union[str, None] = None, executor_type: Union[ExecutorType, str, None] = None) -> BlockExecutor:
         """Get the block executor based on block executor_type.
         If the executor_type is not specified in the method. Infer the executor_type with the
         following rules:
@@ -126,7 +113,7 @@ class ExecutorFactory:
                 executor_type = block.executor_type
                 if executor_type == ExecutorType.LOCAL_PYTHON:
                     # Use default executor type
-                    executor_type = self.get_default_executor_type()
+                    executor_type = cls.get_default_executor_type()
         if executor_type == ExecutorType.PYSPARK:
             from mage_ai.data_preparation.executors.pyspark_block_executor import (
                 PySparkBlockExecutor,

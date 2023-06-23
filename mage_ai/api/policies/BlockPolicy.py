@@ -8,8 +8,7 @@ from mage_ai.orchestration.db.models.oauth import Permission
 class BlockPolicy(BasePolicy):
     @property
     def entity(self):
-        parent_model = self.options.get('parent_model')
-        if parent_model:
+        if parent_model := self.options.get('parent_model'):
             return Permission.Entity.PIPELINE, parent_model.uuid
 
         return super().entity

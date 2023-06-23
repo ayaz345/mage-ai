@@ -185,10 +185,11 @@ def reformat(df, action, **kwargs):
     if reformat_action == 'caps_standardization':
         capitalization = options['capitalization']
         for column in generate_string_cols(df, columns):
-            if capitalization == 'uppercase':
-                df.loc[:, column] = df[columns][column].str.upper()
-            else:
-                df.loc[:, column] = df[columns][column].str.lower()
+            df.loc[:, column] = (
+                df[columns][column].str.upper()
+                if capitalization == 'uppercase'
+                else df[columns][column].str.lower()
+            )
     elif reformat_action == 'currency_to_num':
         for column in generate_string_cols(df, columns):
             clean_col = df[column].replace(CURRENCY_SYMBOLS, '', regex=True)
@@ -302,10 +303,9 @@ def __agg(df, action, agg_method):
 
     if action['action_options'].get('groupby_columns'):
         return __groupby_agg(df, action, agg_method)
-    else:
-        output_col = action['outputs'][0]['uuid']
-        df[output_col] = df[action['action_arguments'][0]].agg(agg_method)
-        return df
+    output_col = action['outputs'][0]['uuid']
+    df[output_col] = df[action['action_arguments'][0]].agg(agg_method)
+    return df
 
 
 def __column_mapping(action):

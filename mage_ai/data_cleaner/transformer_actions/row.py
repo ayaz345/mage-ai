@@ -38,8 +38,7 @@ def sort_rows(df, action, **kwargs):
     feature_by_uuid = {}
     if action.get('action_variables'):
         for _, val in action['action_variables'].items():
-            feature = val.get('feature')
-            if feature:
+            if feature := val.get('feature'):
                 feature_by_uuid[feature['uuid']] = feature
 
     na_indexes = None
@@ -52,10 +51,7 @@ def sort_rows(df, action, **kwargs):
             if idx == 0:
                 na_indexes = df[(df[uuid].isnull()) | (df[uuid].astype(str).str.len() == 0)].index
 
-    bad_df = None
-    if na_indexes is not None:
-        bad_df = df.index.isin(na_indexes)
-
+    bad_df = df.index.isin(na_indexes) if na_indexes is not None else None
     index = (
         (df[~bad_df] if bad_df is not None else df)
         .astype(as_types)

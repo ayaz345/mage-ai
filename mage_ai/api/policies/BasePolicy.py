@@ -36,102 +36,101 @@ class BasePolicy():
         self.resource = resource
         self.parent_model_attr = None
         self.parent_resource_attr = None
-        if isinstance(resource, Iterable):
-            self.resources = resource
-        else:
-            self.resources = [resource]
+        self.resources = resource if isinstance(resource, Iterable) else [resource]
 
     @property
     def entity(self) -> Tuple[Union[Permission.Entity, None], Union[str, None]]:
         return Permission.Entity.PROJECT, get_project_uuid()
 
     @classmethod
-    def action_rule(self, action):
-        if not self.action_rules.get(self.__name__):
-            self.action_rules[self.__name__] = {}
-        return self.action_rules[self.__name__].get(action)
+    def action_rule(cls, action):
+        if not cls.action_rules.get(cls.__name__):
+            cls.action_rules[cls.__name__] = {}
+        return cls.action_rules[cls.__name__].get(action)
 
     @classmethod
-    def query_rule(self, query):
-        if not self.query_rules.get(self.__name__):
-            self.query_rules[self.__name__] = {}
-        return self.query_rules[self.__name__].get(query)
+    def query_rule(cls, query):
+        if not cls.query_rules.get(cls.__name__):
+            cls.query_rules[cls.__name__] = {}
+        return cls.query_rules[cls.__name__].get(query)
 
     @classmethod
-    def read_rule(self, read):
-        if not self.read_rules.get(self.__name__):
-            self.read_rules[self.__name__] = {}
-        return self.read_rules[self.__name__].get(read)
+    def read_rule(cls, read):
+        if not cls.read_rules.get(cls.__name__):
+            cls.read_rules[cls.__name__] = {}
+        return cls.read_rules[cls.__name__].get(read)
 
     @classmethod
-    def write_rule(self, write):
-        if not self.write_rules.get(self.__name__):
-            self.write_rules[self.__name__] = {}
-        return self.write_rules[self.__name__].get(write)
+    def write_rule(cls, write):
+        if not cls.write_rules.get(cls.__name__):
+            cls.write_rules[cls.__name__] = {}
+        return cls.write_rules[cls.__name__].get(write)
 
     @classmethod
-    def allow_actions(self, array, **kwargs):
-        if not self.action_rules.get(self.__name__):
-            self.action_rules[self.__name__] = {}
+    def allow_actions(cls, array, **kwargs):
+        if not cls.action_rules.get(cls.__name__):
+            cls.action_rules[cls.__name__] = {}
         for key in array:
-            if not self.action_rules[self.__name__].get(key):
-                self.action_rules[self.__name__][key] = {}
+            if not cls.action_rules[cls.__name__].get(key):
+                cls.action_rules[cls.__name__][key] = {}
             for scope in kwargs.get('scopes', []):
-                self.action_rules[self.__name__][key][scope] = extract(kwargs, [
-                                                                       'condition'])
+                cls.action_rules[cls.__name__][key][scope] = extract(
+                    kwargs, ['condition']
+                )
 
     @classmethod
-    def allow_query(self, array, **kwargs):
-        if not self.query_rules.get(self.__name__):
-            self.query_rules[self.__name__] = {}
+    def allow_query(cls, array, **kwargs):
+        if not cls.query_rules.get(cls.__name__):
+            cls.query_rules[cls.__name__] = {}
         for key in array:
-            if not self.query_rules[self.__name__].get(key):
-                self.query_rules[self.__name__][key] = {}
+            if not cls.query_rules[cls.__name__].get(key):
+                cls.query_rules[cls.__name__][key] = {}
             for scope in kwargs.get('scopes', []):
-                self.query_rules[self.__name__][key][scope] = extract(kwargs, [
-                                                                      'condition'])
+                cls.query_rules[cls.__name__][key][scope] = extract(
+                    kwargs, ['condition']
+                )
 
     @classmethod
-    def allow_read(self, array, **kwargs):
-        if not self.read_rules.get(self.__name__):
-            self.read_rules[self.__name__] = {}
+    def allow_read(cls, array, **kwargs):
+        if not cls.read_rules.get(cls.__name__):
+            cls.read_rules[cls.__name__] = {}
         for key in array:
-            if not self.read_rules[self.__name__].get(key):
-                self.read_rules[self.__name__][key] = {}
+            if not cls.read_rules[cls.__name__].get(key):
+                cls.read_rules[cls.__name__][key] = {}
             actions = kwargs.get('on_action', [ALL_ACTIONS])
             actions = actions if isinstance(actions, list) else [actions]
             for scope in kwargs.get('scopes', []):
-                if not self.read_rules[self.__name__][key].get(scope):
-                    self.read_rules[self.__name__][key][scope] = {}
+                if not cls.read_rules[cls.__name__][key].get(scope):
+                    cls.read_rules[cls.__name__][key][scope] = {}
                 for action in actions:
-                    self.read_rules[self.__name__][key][scope][action] = extract(kwargs, [
-                                                                                 'condition'])
+                    cls.read_rules[cls.__name__][key][scope][action] = extract(
+                        kwargs, ['condition']
+                    )
 
     @classmethod
-    def allow_write(self, array, **kwargs):
-        if not self.write_rules.get(self.__name__):
-            self.write_rules[self.__name__] = {}
+    def allow_write(cls, array, **kwargs):
+        if not cls.write_rules.get(cls.__name__):
+            cls.write_rules[cls.__name__] = {}
         for key in array:
-            if not self.write_rules[self.__name__].get(key):
-                self.write_rules[self.__name__][key] = {}
+            if not cls.write_rules[cls.__name__].get(key):
+                cls.write_rules[cls.__name__][key] = {}
             actions = kwargs.get('on_action', [ALL_ACTIONS])
             actions = actions if isinstance(actions, list) else [actions]
             for scope in kwargs.get('scopes', []):
-                if not self.write_rules[self.__name__][key].get(scope):
-                    self.write_rules[self.__name__][key][scope] = {}
+                if not cls.write_rules[cls.__name__][key].get(scope):
+                    cls.write_rules[cls.__name__][key][scope] = {}
                 for action in actions:
-                    self.write_rules[self.__name__][key][scope][action] = extract(kwargs, [
-                                                                                  'condition'])
+                    cls.write_rules[cls.__name__][key][scope][action] = extract(
+                        kwargs, ['condition']
+                    )
 
     @classmethod
-    def resource_name(self):
-        return inflection.pluralize(self.resource_name_singular())
+    def resource_name(cls):
+        return inflection.pluralize(cls.resource_name_singular())
 
     @classmethod
-    def resource_name_singular(self):
-        return inflection.underscore(
-            self.__name__.replace(
-                'Policy', '')).lower()
+    def resource_name_singular(cls):
+        return inflection.underscore(cls.__name__.replace('Policy', '')).lower()
 
     def is_owner(self) -> bool:
         return is_owner(
@@ -176,16 +175,18 @@ class BasePolicy():
         )
 
     def authorize_action(self, action):
-        config = self.__class__.action_rule(action)
-        if config:
+        if config := self.__class__.action_rule(action):
             self.__validate_scopes(action, config.keys())
             if config.get(self.__current_scope(), {}).get('condition'):
                 self.__validate_condition(
                     action, config[self.__current_scope()]['condition'])
         else:
             error = ApiError.UNAUTHORIZED_ACCESS
-            error.update({'message': 'The {} action is disabled for {}.'.format(
-                action, self.resource_name()), })
+            error.update(
+                {
+                    'message': f'The {action} action is disabled for {self.resource_name()}.'
+                }
+            )
             raise ApiError(error)
 
     def authorize_attribute(self, read_or_write, attrb, **kwargs):
@@ -196,7 +197,7 @@ class BasePolicy():
             'api_operation_action',
             kwargs.get('api_operation_action', ALL_ACTIONS),
         )
-        if 'read' == read_or_write:
+        if read_or_write == 'read':
             orig_config = self.__class__.read_rule(attrb)
         else:
             orig_config = self.__class__.write_rule(attrb)
@@ -212,17 +213,13 @@ class BasePolicy():
 
         if config is None:
             error = ApiError.UNAUTHORIZED_ACCESS
-            error.update({
-                'message': '{} of {} on {} is disabled for {}.'.format(
-                    read_or_write,
-                    attrb,
-                    api_operation_action,
-                    self.__class__.resource_name(),
-                ),
-            })
+            error.update(
+                {
+                    'message': f'{read_or_write} of {attrb} on {api_operation_action} is disabled for {self.__class__.resource_name()}.'
+                }
+            )
             raise ApiError(error)
-        cond = config.get('condition')
-        if cond:
+        if cond := config.get('condition'):
             self.__validate_condition(attrb, cond, **kwargs)
 
     def authorize_attributes(self, read_or_write, attrbs, **kwargs):
@@ -238,8 +235,7 @@ class BasePolicy():
 
         for key, value in query.items():
             if key != settings.QUERY_API_KEY:
-                error_message = 'Query parameter {} of value {} is not permitted.'.format(
-                    key, value)
+                error_message = f'Query parameter {key} of value {value} is not permitted.'
                 config = self.__class__.query_rule(key)
                 if not config:
                     error = ApiError.UNAUTHORIZED_ACCESS
@@ -266,8 +262,9 @@ class BasePolicy():
             )
             self.parent_resource_attr = getattr(
                 importlib.import_module(
-                    'mage_ai.api.resources.{}Resource'.format(parent_model_class)),
-                '{}Resource'.format(parent_model_class),
+                    f'mage_ai.api.resources.{parent_model_class}Resource'
+                ),
+                f'{parent_model_class}Resource',
             )(self.parent_model(), self.current_user, **self.options)
         return self.parent_resource_attr
 
@@ -284,12 +281,14 @@ class BasePolicy():
     def __validate_condition(self, action, cond, **kwargs):
         if cond and not cond(self):
             error = ApiError.UNAUTHORIZED_ACCESS
-            error.update({
-                'message': kwargs.get(
-                    'message',
-                    'Unauthorized access for {}, failed condition.'.format(action),
-                ),
-            })
+            error.update(
+                {
+                    'message': kwargs.get(
+                        'message',
+                        f'Unauthorized access for {action}, failed condition.',
+                    )
+                }
+            )
             increment(
                 'api_error.unauthorized_access',
                 tags={
@@ -312,9 +311,7 @@ class BasePolicy():
         if OauthScope.CLIENT_ALL in scopes:
             return
         elif not self.current_user and OauthScope.CLIENT_PUBLIC not in scopes:
-            error.update({
-                'message': 'Private access for {} only, invalid scope.'.format(val),
-            })
+            error.update({'message': f'Private access for {val} only, invalid scope.'})
             if settings.DEBUG:
                 error['debug'] = {
                     'class': self.__class__.__name__,
@@ -322,9 +319,7 @@ class BasePolicy():
                 }
             raise ApiError(error)
         elif self.current_user and OauthScope.CLIENT_PRIVATE not in scopes:
-            error.update({
-                'message': 'Public access for {} only, invalid scope.'.format(val),
-            })
+            error.update({'message': f'Public access for {val} only, invalid scope.'})
             if settings.DEBUG:
                 error['debug'] = {
                     'scopes': scopes,

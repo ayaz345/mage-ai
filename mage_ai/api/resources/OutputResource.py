@@ -6,15 +6,8 @@ from mage_ai.orchestration.db.models.schedules import BlockRun
 class OutputResource(GenericResource):
     @classmethod
     @safe_db_query
-    def collection(self, query, meta, user, **kwargs):
+    def collection(cls, query, meta, user, **kwargs):
         parent_model = kwargs['parent_model']
 
-        outputs = []
-        if type(parent_model) is BlockRun:
-            outputs = parent_model.get_outputs()
-
-        return self.build_result_set(
-            outputs,
-            user,
-            **kwargs,
-        )
+        outputs = parent_model.get_outputs() if type(parent_model) is BlockRun else []
+        return cls.build_result_set(outputs, user, **kwargs)

@@ -28,9 +28,9 @@ class Preferences:
     ):
         self.repo_path = repo_path or get_repo_path()
         self.preferences_file_path = \
-            os.path.join(self.repo_path, PREFERENCES_FILE)
+                os.path.join(self.repo_path, PREFERENCES_FILE)
         self.user = user
-        project_preferences = dict()
+        project_preferences = {}
         try:
             if user and user.preferences and user.git_settings is None:
                 project_preferences = user.preferences
@@ -41,8 +41,6 @@ class Preferences:
                     project_preferences = yaml.full_load(f.read()) or {}
         except Exception:
             traceback.print_exc()
-            pass
-
         # Git settings
         if os.getenv(GIT_REPO_LINK_VAR):
             self.sync_config = dict(
@@ -55,7 +53,7 @@ class Preferences:
                 sync_on_pipeline_run=bool(int(os.getenv(GIT_SYNC_ON_PIPELINE_RUN_TYPE) or 0)),
             )
         else:
-            project_sync_config = project_preferences.get('sync_config', dict())
+            project_sync_config = project_preferences.get('sync_config', {})
             if user:
                 user_git_settings = user.git_settings or {}
                 self.sync_config = merge_dict(project_sync_config, user_git_settings)
@@ -81,11 +79,10 @@ class Preferences:
 
 def get_preferences(repo_path=None, user: User = None) -> Preferences:
     default_preferences = Preferences(repo_path=repo_path)
-    if user:
-        if user.preferences is None \
-                and os.path.exists(default_preferences.preferences_file_path):
-            return default_preferences
-        else:
-            return Preferences(user=user)
-    else:
+    if not user:
         return default_preferences
+    if user.preferences is None \
+            and os.path.exists(default_preferences.preferences_file_path):
+        return default_preferences
+    else:
+        return Preferences(user=user)

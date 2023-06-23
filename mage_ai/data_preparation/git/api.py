@@ -14,17 +14,13 @@ API_ENDPOINT = 'https://api.github.com'
 
 
 def get_access_token_for_user(user: User) -> Oauth2AccessToken:
-    oauth_client = Oauth2Application.query.filter(
+    if oauth_client := Oauth2Application.query.filter(
         Oauth2Application.client_id == OAUTH_PROVIDER_GITHUB,
-    ).first()
-
-    if oauth_client:
-        access_token = Oauth2AccessToken.query.filter(
+    ).first():
+        return Oauth2AccessToken.query.filter(
             Oauth2AccessToken.expires > datetime.utcnow(),
             Oauth2AccessToken.oauth2_application_id == oauth_client.id,
         ).first()
-
-        return access_token
 
 
 def fetch(remote_name: str, remote_url: str, token: str) -> RemoteProgress:

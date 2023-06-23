@@ -51,21 +51,24 @@ class Client:
             Delimiter=delimiter,
         )
         if response.get('Contents'):
-            for obj in response['Contents']:
-                if suffix is None or obj['Key'].endswith(suffix):
-                    keys.append(obj['Key'])
+            keys.extend(
+                obj['Key']
+                for obj in response['Contents']
+                if suffix is None or obj['Key'].endswith(suffix)
+            )
         if response.get('CommonPrefixes'):
-            for obj in response['CommonPrefixes']:
-                keys.append(obj['Prefix'])
+            keys.extend(obj['Prefix'] for obj in response['CommonPrefixes'])
         return keys
 
     def list_objects(self, prefix: str, max_keys: int = MAX_KEYS, suffix: str = None):
         keys = []
         response = self.client.list_objects_v2(Bucket=self.bucket, MaxKeys=max_keys, Prefix=prefix)
         if response.get('Contents'):
-            for obj in response['Contents']:
-                if suffix is None or obj['Key'].endswith(suffix):
-                    keys.append(obj['Key'])
+            keys.extend(
+                obj['Key']
+                for obj in response['Contents']
+                if suffix is None or obj['Key'].endswith(suffix)
+            )
         return keys
 
     def upload(self, object_key: str, content):

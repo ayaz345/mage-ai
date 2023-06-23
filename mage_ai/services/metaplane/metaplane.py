@@ -64,11 +64,7 @@ class Metaplane(HttpClient):
     VERSION = 'v1'
 
     def __init__(self, config: Union[Dict, Config]):
-        if type(config) is dict:
-            self.config = Config.load(config=config)
-        else:
-            self.config = config
-
+        self.config = Config.load(config=config) if type(config) is dict else config
         self.headers = {
             'Authorization': f'Bearer {self.config.api_token}',
             'Content-Type': 'application/json',
@@ -96,7 +92,7 @@ class Metaplane(HttpClient):
             now = datetime.utcnow()
             status = self.run_monitors([monitor_id])['status']
             print(f'Monitor ID {monitor_id} ran with status {status}.')
-            if 200 == status:
+            if status == 200:
                 monitors_started[monitor_id] = now
 
         monitors_completed = {}

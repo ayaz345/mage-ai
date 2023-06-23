@@ -27,7 +27,7 @@ class LoggerManager:
         self.partition = partition
 
         self.repo_config = repo_config or get_repo_config()
-        logging_config = self.repo_config.logging_config if self.repo_config else dict()
+        logging_config = self.repo_config.logging_config if self.repo_config else {}
         self.logging_config = LoggingConfig.load(config=logging_config)
 
         logger_name_parts = [self.pipeline_uuid]
@@ -61,12 +61,11 @@ class LoggerManager:
             handler.setLevel(self.log_level)
             handler.setFormatter(self.formatter)
             self.logger.addHandler(handler)
-        else:
+        elif stream_handler := find(
+            lambda hr: hr.__class__ == logging.StreamHandler, self.logger.handlers
+        ):
             if self.logging_config.destination_config:
-                stream_handler = \
-                    find(lambda hr: hr.__class__ == logging.StreamHandler, self.logger.handlers)
-                if stream_handler:
-                    self.stream = stream_handler.stream
+                self.stream = stream_handler.stream
 
     def create_stream_handler(self):
         self.stream = io.StringIO()
@@ -99,11 +98,11 @@ class LoggerManager:
         if create_dir:
             self.create_log_filepath_dir(prefix)
 
-        if self.block_uuid is None:
-            log_filepath = os.path.join(prefix, 'pipeline.log')
-        else:
-            log_filepath = os.path.join(prefix, f'{self.block_uuid}.log')
-        return log_filepath
+        return (
+            os.path.join(prefix, 'pipeline.log')
+            if self.block_uuid is None
+            else os.path.join(prefix, f'{self.block_uuid}.log')
+        )
 
     def get_logs(self):
         file = File.from_path(self.get_log_filepath())

@@ -35,11 +35,7 @@ def build_buckets(min_value, max_value, max_buckets, column_type):
 
     is_integer = False
     parts = str(diff).split('.')
-    if len(parts) == 1:
-        is_integer = True
-    else:
-        is_integer = int(parts[1]) == 0
-
+    is_integer = True if len(parts) == 1 else int(parts[1]) == 0
     if ColumnType.NUMBER == column_type and total_interval <= max_buckets and is_integer:
         number_of_buckets = int(total_interval)
         bucket_interval = 1
@@ -102,7 +98,7 @@ def build_histogram_data(col1, series, column_type):
 
 
 def build_correlation_data(df):
-    charts = dict()
+    charts = {}
     df_corr = df.corr()
     columns = df_corr.columns
     for col1 in columns:
@@ -142,7 +138,7 @@ def build_time_series_data(df, features, datetime_column):
     )
 
     x = []
-    y_dict = dict()
+    y_dict = {}
 
     df_copy = df.copy()
     df_copy[datetime_column] = datetimes.view(int) / 10**9
@@ -184,18 +180,13 @@ def build_time_series_data(df, features, datetime_column):
             )
 
             if column_type in [ColumnType.NUMBER, ColumnType.NUMBER_WITH_DECIMALS]:
-                if len(series_non_null) == 0:
-                    average = 0
-                else:
-                    average = series_non_null.mean()
-                y_data.update(
-                    dict(
-                        average=average,
-                        max=series_non_null.max(),
-                        median=series_non_null.median(),
-                        min=series_non_null.min(),
-                        sum=series_non_null.sum(),
-                    )
+                average = 0 if len(series_non_null) == 0 else series_non_null.mean()
+                y_data |= dict(
+                    average=average,
+                    max=series_non_null.max(),
+                    median=series_non_null.median(),
+                    min=series_non_null.min(),
+                    sum=series_non_null.sum(),
                 )
             elif column_type in [
                 ColumnType.CATEGORY,
@@ -206,17 +197,14 @@ def build_time_series_data(df, features, datetime_column):
                 if len(value_counts.index):
                     value_counts_top = value_counts.iloc[:12]
                     mode = value_counts_top.index[0]
-                    y_data.update(
-                        dict(
-                            mode=mode,
-                            value_counts=value_counts_top.to_dict(),
-                        )
+                    y_data |= dict(
+                        mode=mode,
+                        value_counts=value_counts_top.to_dict(),
                     )
 
             y_dict[col].append(y_data)
-    charts = dict()
-    for f, y in y_dict.items():
-        charts[f] = dict(
+    return {
+        f: dict(
             type=CHART_TYPE_LINE_CHART,
             x=x,
             x_metadata=dict(
@@ -225,7 +213,8 @@ def build_time_series_data(df, features, datetime_column):
             ),
             y=y,
         )
-    return charts
+        for f, y in y_dict.items()
+    }
 
 
 def build_overview_data(
@@ -329,7 +318,7 @@ def build_overview_data(
         class_mappings = {k: list(e.label_classes()) for k, e in encoder.encoders.items()}
         df_sample_filtered = pd.concat([df_sample_numeric, df_sample_category], axis=1)
     else:
-        class_mappings = dict()
+        class_mappings = {}
         df_sample_filtered = df_sample_numeric
 
     increment(f'{DD_KEY}.build_overview_data.succeeded')

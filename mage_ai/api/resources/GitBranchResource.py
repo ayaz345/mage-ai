@@ -22,49 +22,38 @@ def build_file_object(obj):
 
 class GitBranchResource(GenericResource):
     @classmethod
-    def collection(self, query, meta, user, **kwargs):
+    def collection(cls, query, meta, user, **kwargs):
         arr = []
 
-        include_remote_branches = query.get('include_remote_branches', None)
-        if include_remote_branches:
+        if include_remote_branches := query.get('include_remote_branches', None):
             include_remote_branches = include_remote_branches[0]
 
-        repository = query.get('repository', None)
-        if repository:
+        if repository := query.get('repository', None):
             repository = repository[0]
 
-            access_token = api.get_access_token_for_user(user)
-            if access_token:
+            if access_token := api.get_access_token_for_user(user):
                 auth = Auth.Token(access_token.token)
                 g = Github(auth=auth)
                 repo = g.get_repo(repository)
                 branches = repo.get_branches()
 
-                for branch in branches:
-                    arr.append(dict(name=branch.name))
+                arr.extend(dict(name=branch.name) for branch in branches)
         else:
             git_manager = Git.get_manager(user=user)
             arr += [dict(name=branch) for branch in git_manager.branches]
 
-            if include_remote_branches:
-                pass
-
-        return self.build_result_set(
-            arr,
-            user,
-            **kwargs,
-        )
+        return cls.build_result_set(arr, user, **kwargs)
 
     @classmethod
-    def create(self, payload, user, **kwargs):
+    def create(cls, payload, user, **kwargs):
         branch = payload.get('name')
         git_manager = Git.get_manager(user=user)
         git_manager.switch_branch(branch)
 
-        return self(dict(name=git_manager.current_branch), user, **kwargs)
+        return cls(dict(name=git_manager.current_branch), user, **kwargs)
 
     @classmethod
-    async def member(self, pk, user, **kwargs):
+    async def member(cls, pk, user, **kwargs):
         git_manager = Git.get_manager(user=user)
 
         files = {}
@@ -80,7 +69,7 @@ class GitBranchResource(GenericResource):
 
             arr = []
             for idx, part in enumerate(parts):
-                default_obj = dict()
+                default_obj = {}
 
                 if idx == 0:
                     obj = files.get(part, default_obj)
@@ -92,23 +81,24 @@ class GitBranchResource(GenericResource):
 
             obj_final = None
             for idx, obj in enumerate(reversed(arr)):
-                if idx == 0:
-                    obj_final = obj
-                else:
+                if idx != 0:
                     part = parts[number_of_parts - idx]
                     obj[part] = obj_final
-                    obj_final = obj
-
+                obj_final = obj
             files[parts[0]] = obj_final
 
-        return self(dict(
-            files=build_file_object(files),
-            modified_files=modified_files,
-            name=git_manager.current_branch,
-            staged_files=staged_files,
-            sync_config=get_preferences().sync_config,
-            untracked_files=untracked_files,
-        ), user, **kwargs)
+        return cls(
+            dict(
+                files=build_file_object(files),
+                modified_files=modified_files,
+                name=git_manager.current_branch,
+                staged_files=staged_files,
+                sync_config=get_preferences().sync_config,
+                untracked_files=untracked_files,
+            ),
+            user,
+            **kwargs
+        )
 
     async def update(self, payload, **kwargs):
         git_manager = Git.get_manager(user=self.current_user)
@@ -142,12 +132,13 @@ class GitBranchResource(GenericResource):
                 from git.exc import GitCommandError
 
                 try:
-                    access_token = api.get_access_token_for_user(self.current_user)
-                    if access_token:
+                    if access_token := api.get_access_token_for_user(
+                        self.current_user
+                    ):
                         remote = git_manager.repo.remotes[push['remote']]
                         custom_progress = api.push(
                             remote.name,
-                            [url for url in remote.urls][0],
+                            list(remote.urls)[0],
                             push['branch'],
                             access_token.token,
                         )
@@ -158,7 +149,7 @@ class GitBranchResource(GenericResource):
                             self.model['progress'] = lines
                     else:
                         self.model['error'] = \
-                            'Please authenticate with GitHub before trying to push.'
+                                'Please authenticate with GitHub before trying to push.'
                 except GitCommandError as err:
                     self.model['error'] = str(err)
             else:
@@ -169,8 +160,9 @@ class GitBranchResource(GenericResource):
                 from git.exc import GitCommandError
 
                 try:
-                    access_token = api.get_access_token_for_user(self.current_user)
-                    if access_token:
+                    if access_token := api.get_access_token_for_user(
+                        self.current_user
+                    ):
                         branch_name = payload.get('branch')
                         remote = git_manager.repo.remotes[pull['remote']]
                         url = list(remote.urls)[0]
@@ -197,7 +189,7 @@ class GitBranchResource(GenericResource):
                             self.model['progress'] = lines
                     else:
                         self.model['error'] = \
-                            'Please authenticate with GitHub before trying to pull.'
+                                'Please authenticate with GitHub before trying to pull.'
                 except GitCommandError as err:
                     self.model['error'] = str(err)
             else:
@@ -250,17 +242,17 @@ class GitBranchResource(GenericResource):
             'rebase',
         ]:
             data = payload.get('delete', None) or \
-                payload.get('merge', None) or \
-                payload.get('rebase', None)
+                    payload.get('merge', None) or \
+                    payload.get('rebase', None)
 
             if data and 'base_branch' in data:
                 base_branch = data['base_branch']
 
-                if 'delete' == action_type:
+                if action_type == 'delete':
                     git_manager.delete_branch(base_branch)
-                elif 'merge' == action_type:
+                elif action_type == 'merge':
                     git_manager.merge_branch(base_branch, message=message)
-                elif 'rebase' == action_type:
+                elif action_type == 'rebase':
                     git_manager.rebase_branch(base_branch, message=message)
             else:
                 error = ApiError.RESOURCE_ERROR

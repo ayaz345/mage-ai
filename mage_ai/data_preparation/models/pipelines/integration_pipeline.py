@@ -74,8 +74,7 @@ class IntegrationPipeline(Pipeline):
             if self.destination_uuid:
                 mod1 = importlib.import_module('mage_integrations.destinations')
                 absolute_path = '/'.join(mod1.__file__.split('/')[:-1])
-                absolute_path = f'{absolute_path}/{self.destination_uuid}/__init__.py'
-                return absolute_path
+                return f'{absolute_path}/{self.destination_uuid}/__init__.py'
 
     @property
     def source_config(self) -> Dict:
@@ -108,8 +107,7 @@ class IntegrationPipeline(Pipeline):
             if self.source_uuid:
                 mod1 = importlib.import_module('mage_integrations.sources')
                 absolute_path = '/'.join(mod1.__file__.split('/')[:-1])
-                absolute_path = f'{absolute_path}/{self.source_uuid}/__init__.py'
-                return absolute_path
+                return f'{absolute_path}/{self.source_uuid}/__init__.py'
 
     @property
     def settings_file_path(self) -> str:
@@ -228,8 +226,8 @@ class IntegrationPipeline(Pipeline):
         streams_updated = set()
         try:
             streams = streams if streams else \
-                list(map(lambda s: s['tap_stream_id'], self.streams()))
-            if file_path and len(streams) > 0:
+                    list(map(lambda s: s['tap_stream_id'], self.streams()))
+            if file_path and streams:
                 run_args = [
                     PYTHON,
                     file_path,
@@ -393,6 +391,6 @@ class IntegrationPipeline(Pipeline):
     def __global_variables(self, variables: Dict = None) -> Dict:
         if variables is None:
             variables = {}
-        d = get_global_variables(self.uuid) or dict()
+        d = get_global_variables(self.uuid) or {}
         d.update(variables)
         return d

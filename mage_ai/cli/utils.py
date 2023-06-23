@@ -6,7 +6,7 @@ def parse_runtime_variables(variables: List[str]) -> Dict[str, Any]:
     """
     Returns a dictionary of variable to parsed values.
     """
-    vars_parsed = dict()
+    vars_parsed = {}
 
     if variables is None:
         return vars_parsed

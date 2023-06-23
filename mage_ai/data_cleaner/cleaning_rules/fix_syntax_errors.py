@@ -8,11 +8,11 @@ from mage_ai.data_cleaner.transformer_actions.utils import build_action_variable
 
 class FixSyntaxErrors(BaseRule):
     def evaluate(self):
-        columns_with_syntax_errors = []
-        for column in self.df_columns:
-            if self.statistics[f'{column}/invalid_value_rate'] > 0:
-                columns_with_syntax_errors.append(column)
-
+        columns_with_syntax_errors = [
+            column
+            for column in self.df_columns
+            if self.statistics[f'{column}/invalid_value_rate'] > 0
+        ]
         suggestions = []
         if len(columns_with_syntax_errors):
             suggestions.append(

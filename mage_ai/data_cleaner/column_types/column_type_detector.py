@@ -103,21 +103,23 @@ def infer_number_type(series, column_name, dtype):
             and 'phone' in column_name.lower()
         ):
             mdtype = ColumnType.PHONE_NUMBER
-        else:
-            if np.issubdtype(dtype, np.integer):
+        elif np.issubdtype(dtype, np.integer):
+            mdtype = (
+                ColumnType.ZIP_CODE
                 if (
                     clean_series.min() >= 100
                     and clean_series.max() <= 99999
-                    and str_in_set(column_name.lower(), RESERVED_ZIP_CODE_WORDS)
-                ):
-                    mdtype = ColumnType.ZIP_CODE
-                else:
-                    mdtype = ColumnType.NUMBER
-            elif np.issubdtype(dtype, np.floating):
-                if all(is_integer):
-                    mdtype = ColumnType.NUMBER
-                else:
-                    mdtype = ColumnType.NUMBER_WITH_DECIMALS
+                    and str_in_set(
+                        column_name.lower(), RESERVED_ZIP_CODE_WORDS
+                    )
+                )
+                else ColumnType.NUMBER
+            )
+        elif np.issubdtype(dtype, np.floating):
+            if all(is_integer):
+                mdtype = ColumnType.NUMBER
+            else:
+                mdtype = ColumnType.NUMBER_WITH_DECIMALS
     return mdtype
 
 
@@ -161,29 +163,29 @@ def infer_object_type(series, column_name, kwargs):
     if all(clean_series.str.match(REGEX_NUMBER)):
         if not all(clean_series.str.match(REGEX_INTEGER)):
             return ColumnType.NUMBER_WITH_DECIMALS
-        else:
-            lowercase_column_name = column_name.lower()
-            correct_phone_nums = clean_series.str.match(REGEX_PHONE_NUMBER).sum()
-            correct_zip_codes = clean_series.str.match(REGEX_ZIP_CODE).sum()
-            if correct_phone_nums / length >= NUMBER_TYPE_MATCHES_THRESHOLD and str_in_set(
+        lowercase_column_name = column_name.lower()
+        correct_phone_nums = clean_series.str.match(REGEX_PHONE_NUMBER).sum()
+        correct_zip_codes = clean_series.str.match(REGEX_ZIP_CODE).sum()
+        if correct_phone_nums / length >= NUMBER_TYPE_MATCHES_THRESHOLD and str_in_set(
                 lowercase_column_name, RESERVED_PHONE_NUMBER_WORDS
             ):
-                return ColumnType.PHONE_NUMBER
-            elif correct_zip_codes / length >= NUMBER_TYPE_MATCHES_THRESHOLD and str_in_set(
-                lowercase_column_name, RESERVED_ZIP_CODE_WORDS
-            ):
-                return ColumnType.ZIP_CODE
-            else:
-                clean_series = clean_series.str.replace(r'\.0*', '', regex=True)
-                try:
-                    clean_series.astype(int)
-                    return ColumnType.NUMBER
-                except OverflowError:
-                    if clean_series_nunique <= kwargs.get('category_cardinality_threshold', 255):
-                        return ColumnType.CATEGORY
-                    else:
-                        return ColumnType.CATEGORY_HIGH_CARDINALITY
-
+            return ColumnType.PHONE_NUMBER
+        elif correct_zip_codes / length >= NUMBER_TYPE_MATCHES_THRESHOLD and str_in_set(
+            lowercase_column_name, RESERVED_ZIP_CODE_WORDS
+        ):
+            return ColumnType.ZIP_CODE
+        else:
+            clean_series = clean_series.str.replace(r'\.0*', '', regex=True)
+            try:
+                clean_series.astype(int)
+                return ColumnType.NUMBER
+            except OverflowError:
+                return (
+                    ColumnType.CATEGORY
+                    if clean_series_nunique
+                    <= kwargs.get('category_cardinality_threshold', 255)
+                    else ColumnType.CATEGORY_HIGH_CARDINALITY
+                )
     else:
         matches = clean_series.str.match(REGEX_DATETIME).sum()
         if matches / length >= DATETIME_MATCHES_THRESHOLD:

@@ -50,9 +50,7 @@ def start_backfill(backfill: Backfill) -> List[PipelineRun]:
 
 
 def preview_run_dates(backfill: Backfill) -> List[Dict]:
-    variables_list = __build_variables_list(backfill)
-
-    return variables_list
+    return __build_variables_list(backfill)
 
 
 def cancel_backfill(backfill: Backfill) -> None:

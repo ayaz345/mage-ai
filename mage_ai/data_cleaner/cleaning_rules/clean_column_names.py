@@ -15,9 +15,7 @@ class CleanColumnNames(BaseRule):
             return True
         if NameConventionPatterns.SNAKE.match(name):
             return False
-        if NameConventionPatterns.LOWERCASE.match(name):
-            return False
-        return True
+        return not NameConventionPatterns.LOWERCASE.match(name)
 
     def evaluate(self):
         """
@@ -29,9 +27,8 @@ class CleanColumnNames(BaseRule):
         4. If the column name is not snake_case, suggest cleaning
            (convert to snakecase from pascal case, camel case, uppercase)
         """
-        matches = list(filter(self.is_dirty, self.df_columns))
         suggestions = []
-        if len(matches) != 0:
+        if matches := list(filter(self.is_dirty, self.df_columns)):
             suggestions.append(
                 self._build_transformer_action_suggestion(
                     'Clean dirty column names',

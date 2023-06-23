@@ -12,7 +12,7 @@ class BlockOutputResource(GenericResource):
     """
     @classmethod
     @safe_db_query
-    def member(self, pk, user, **kwargs):
+    def member(cls, pk, user, **kwargs):
         block_uuid = pk
 
         query = kwargs.get('query', {})
@@ -35,4 +35,4 @@ class BlockOutputResource(GenericResource):
                 variable_type=VariableType.DATAFRAME,
             )
 
-        return self(dict(outputs=outputs), user, **kwargs)
+        return cls(dict(outputs=outputs), user, **kwargs)

@@ -20,20 +20,16 @@ MAX_LOG_FILES = 20
 class LogResource(GenericResource):
     @classmethod
     @safe_db_query
-    async def collection(self, query, meta, user, **kwargs):
+    async def collection(cls, query, meta, user, **kwargs):
         parent_model = kwargs['parent_model']
 
         arr = []
         if type(parent_model) is BlockRun:
             arr = parent_model.logs
         elif issubclass(parent_model.__class__, Pipeline):
-            arr = await self.__pipeline_logs(parent_model, query, meta)
+            arr = await cls.__pipeline_logs(parent_model, query, meta)
 
-        return self.build_result_set(
-            arr,
-            user,
-            **kwargs,
-        )
+        return cls.build_result_set(arr, user, **kwargs)
 
     @classmethod
     @safe_db_query
@@ -72,27 +68,15 @@ class LogResource(GenericResource):
         block_uuids = query_arg.get('block_uuid[]', [None])
         if block_uuids:
             block_uuids = block_uuids[0]
-        if block_uuids:
-            block_uuids = block_uuids.split(',')
-        else:
-            block_uuids = []
-
+        block_uuids = block_uuids.split(',') if block_uuids else []
         pipeline_run_ids = query_arg.get('pipeline_run_id[]', [None])
         if pipeline_run_ids:
             pipeline_run_ids = pipeline_run_ids[0]
-        if pipeline_run_ids:
-            pipeline_run_ids = pipeline_run_ids.split(',')
-        else:
-            pipeline_run_ids = []
-
+        pipeline_run_ids = pipeline_run_ids.split(',') if pipeline_run_ids else []
         block_run_ids = query_arg.get('block_run_id[]', [None])
         if block_run_ids:
             block_run_ids = block_run_ids[0]
-        if block_run_ids:
-            block_run_ids = block_run_ids.split(',')
-        else:
-            block_run_ids = []
-
+        block_run_ids = block_run_ids.split(',') if block_run_ids else []
         a = aliased(PipelineRun, name='a')
         b = aliased(PipelineSchedule, name='b')
         c = aliased(BlockRun, name='c')

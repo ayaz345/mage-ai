@@ -31,8 +31,7 @@ class RemoveOutliers(BaseRule):
             Union[Dict, None]: If a suggestion is made, returns the suggestion dictionary.
             Else returns `None`
         """
-        outlier_count = self.statistics.get(f'{column}/outlier_count')
-        if outlier_count:
+        if outlier_count := self.statistics.get(f'{column}/outlier_count'):
             std = self.statistics[f'{column}/std']
             avg = self.statistics[f'{column}/average']
             max_z_score = self.config('max_z_score')
@@ -53,7 +52,6 @@ class RemoveOutliers(BaseRule):
     def evaluate(self):
         suggestions = []
         for col in self.df_columns:
-            suggestion = self.one_dim_outlier_check(col)
-            if suggestion:
+            if suggestion := self.one_dim_outlier_check(col):
                 suggestions.append(suggestion)
         return suggestions
